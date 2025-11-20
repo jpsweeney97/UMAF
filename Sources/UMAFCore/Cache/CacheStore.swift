@@ -9,8 +9,8 @@
 //    <inputDir>/.umaf-cache/<hash>.json    // cached envelope JSON
 //
 
+import Crypto
 import Foundation
-import CryptoKit
 
 public struct CacheEntry: Codable, Hashable {
   public let hash: String
@@ -74,7 +74,8 @@ public enum CacheStore {
     let indexURL = self.indexURL(forSourceURL: url)
     var index: [String: CacheEntry] = [:]
     if let existingData = try? Data(contentsOf: indexURL),
-       let decoded = try? JSONDecoder().decode([String: CacheEntry].self, from: existingData) {
+      let decoded = try? JSONDecoder().decode([String: CacheEntry].self, from: existingData)
+    {
       index = decoded
     }
     index[hash] = entry

@@ -3,7 +3,7 @@
 //  Core formatting & semantic engine for UMAF (v0.5)
 //
 
-import CryptoKit
+import Crypto
 import Foundation
 import PDFKit
 
