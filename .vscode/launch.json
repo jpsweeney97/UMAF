@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:UMAF}",
+            "name": "Debug umaf",
+            "target": "umaf",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug umaf"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:UMAF}",
+            "name": "Release umaf",
+            "target": "umaf",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release umaf"
+        }
+    ]
+}

@@ -1,0 +1,183 @@
+{
+  "$id": "https://umaf.dev/specs/umaf-envelope-0.5.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UMAF Envelope v0.5.0",
+  "type": "object",
+  "required": [
+    "version",
+    "docTitle",
+    "docId",
+    "createdAt",
+    "sourceHash",
+    "sourcePath",
+    "mediaType",
+    "encoding",
+    "sizeBytes",
+    "lineCount",
+    "normalized"
+  ],
+  "properties": {
+    "version": { "type": "string" },
+    "docTitle": { "type": "string" },
+    "docId": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "sourceHash": { "type": "string" },
+    "sourcePath": { "type": "string" },
+    "mediaType": { "type": "string" },
+    "encoding": { "type": "string" },
+    "sizeBytes": { "type": "integer", "minimum": 0 },
+    "lineCount": { "type": "integer", "minimum": 0 },
+    "normalized": { "type": "string" },
+    "sections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/section" }
+    },
+    "bullets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/bullet" }
+    },
+    "frontMatter": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/frontMatterEntry" }
+    },
+    "tables": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/table" }
+    },
+    "codeBlocks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/codeBlock" }
+    },
+    "spans": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/span" }
+    },
+    "blocks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/block" }
+    },
+    "featureFlags": {
+      "type": "object",
+      "additionalProperties": { "type": "boolean" }
+    }
+  },
+  "$defs": {
+    "section": {
+      "type": "object",
+      "required": ["heading", "level", "lines", "paragraphs"],
+      "properties": {
+        "heading": { "type": "string" },
+        "level": { "type": "integer", "minimum": 1 },
+        "lines": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "paragraphs": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "bullet": {
+      "type": "object",
+      "required": ["text", "lineIndex"],
+      "properties": {
+        "text": { "type": "string" },
+        "lineIndex": { "type": "integer", "minimum": 0 },
+        "sectionHeading": { "type": "string" },
+        "sectionLevel": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "frontMatterEntry": {
+      "type": "object",
+      "required": ["key", "value"],
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "table": {
+      "type": "object",
+      "required": ["startLineIndex", "header", "rows"],
+      "properties": {
+        "startLineIndex": { "type": "integer", "minimum": 0 },
+        "header": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "codeBlock": {
+      "type": "object",
+      "required": ["startLineIndex", "code"],
+      "properties": {
+        "startLineIndex": { "type": "integer", "minimum": 0 },
+        "language": { "type": "string" },
+        "code": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "span": {
+      "type": "object",
+      "required": ["id", "startLine", "endLine"],
+      "properties": {
+        "id": { "type": "string" },
+        "startLine": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 },
+        "startColumn": { "type": "integer", "minimum": 0 },
+        "endColumn": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "block": {
+      "type": "object",
+      "required": ["id", "kind", "spanId"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": {
+          "type": "string",
+          "enum": ["root", "section", "paragraph", "bullet", "table", "code", "frontMatter", "raw"]
+        },
+        "spanId": { "type": "string" },
+        "parentId": { "type": "string" },
+        "level": { "type": "integer", "minimum": 1 },
+        "heading": { "type": "string" },
+        "language": { "type": "string" },
+        "tableHeader": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "tableRows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "provenance": { "type": "string" },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

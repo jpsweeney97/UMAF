@@ -1,0 +1,26 @@
+name: Node validation
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate-envelopes:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        run: npm ci
+      - name: Build CLI
+        run: swift build -c release
+      - name: Validate schema
+        run: npm run validate:schema
+      - name: Run crucible + validate envelopes
+        env:
+          UMAF_CLI: ${{ github.workspace }}/.build/release/umaf
+        run: npm run validate:envelopes

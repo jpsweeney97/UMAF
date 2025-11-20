@@ -1,0 +1,17 @@
+{
+  "name": "umaf",
+  "version": "0.5.0",
+  "description": "Build + validate UMAF envelopes from Markdown/JSON/TXT inputs.",
+  "license": "ISC",
+  "type": "module",
+  "scripts": {
+    "validate:schema": "node scripts/validate2020.mjs --schema spec/umaf-envelope-v0.5.0.json",
+    "validate:envelopes": "node scripts/run-envelopes.mjs"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "ajv-cli": "^5.0.0",
+    "ajv-formats": "^3.0.1",
+    "glob": "^12.0.0"
+  }
+}

@@ -1,0 +1,35 @@
+# SwiftLint configuration
+
+disabled_rules:
+  - trailing_whitespace
+  - identifier_name
+  - nesting
+
+line_length: 120
+included:
+  - Sources
+  - Tests
+
+opt_in_rules:
+  - empty_count
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - closure_end_indentation
+  - collection_alignment
+  - discouraged_object_literal
+  - discouraged_optional_boolean
+  - discouraged_optional_collection
+  - fatal_error_message
+  - file_header
+  - first_where
+  - force_cast
+  - function_default_parameter_at_end
+  - indentation_width
+  - literal_expression_end_indentation
+  - multiline_arguments
+  - multiline_function_chains
+  - private_action
+  - redundant_nil_coalescing
+  - sorted_imports
+  - strong_iboutlet
+  - unneeded_parentheses_in_closure_argument
