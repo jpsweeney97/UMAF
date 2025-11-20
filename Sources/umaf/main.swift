@@ -18,12 +18,28 @@ struct UMAFCLI: ParsableCommand {
   @Flag(name: .long, help: "Output canonical normalized text (usually Markdown).")
   var normalized: Bool = false
 
+  @Flag(
+    name: .long,
+    help: "Populate and emit structural spans/blocks alongside the envelope JSON."
+  )
+  var dumpStructure: Bool = false
+
   func run() throws {
     let url = URL(fileURLWithPath: input)
     let engine = UMAFEngine()
 
+    if dumpStructure && !json {
+      throw ValidationError("--dump-structure requires --json")
+    }
+
     if json {
-      let env = try engine.envelope(for: url)
+      var env = try engine.envelope(for: url)
+      if dumpStructure {
+        env = UMAFNormalization.withRootSpanAndBlock(env)
+        var flags = env.featureFlags ?? [:]
+        flags["structure"] = true
+        env.featureFlags = flags
+      }
       let enc = JSONEncoder()
       enc.outputFormatting = [.prettyPrinted, .sortedKeys]
       let data = try enc.encode(env)
