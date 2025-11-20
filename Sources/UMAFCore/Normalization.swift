@@ -28,40 +28,6 @@ public enum UMAFNormalization {
   /// Ensure there is at least a root span and root block in the envelope.
   /// This is a small, non-destructive normalizer that can be used by UI callers.
   public static func withRootSpanAndBlock(_ envelope: UMAFEnvelopeV0_5) -> UMAFEnvelopeV0_5 {
-    var env = envelope
-
-    // If any spans already exist, we assume caller is doing richer work.
-    guard env.spans.isEmpty else { return env }
-
-    let rootSpanId = "span:root"
-    let rootSpan = UMAFSpanV0_5(
-      id: rootSpanId,
-      startLine: 1,
-      endLine: max(1, env.lineCount),
-      startColumn: nil,
-      endColumn: nil
-    )
-
-    env.spans = [rootSpan]
-
-    if env.blocks.isEmpty {
-      let rootBlock = UMAFBlockV0_5(
-        id: "block:root",
-        kind: .root,
-        spanId: rootSpanId,
-        parentId: nil,
-        level: 1,
-        heading: env.docTitle,
-        language: nil,
-        tableHeader: nil,
-        tableRows: nil,
-        metadata: ["mediaType": env.mediaType],
-        provenance: "umaf:0.5.0:root",
-        confidence: 1.0
-      )
-      env.blocks = [rootBlock]
-    }
-
-    return env
+    UMAFWalkerV0_5.ensureRootSpanAndBlock(envelope)
   }
 }

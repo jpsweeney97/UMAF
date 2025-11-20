@@ -26,8 +26,10 @@ public struct UMAFEngine {
       inputURL: url,
       outputFormat: .jsonEnvelope
     )
-    let env = try UMAFNormalization.envelopeV0_5(fromJSONData: data)
-    return UMAFNormalization.withRootSpanAndBlock(env)
+    let decoder = JSONDecoder()
+    let coreEnvelope = try decoder.decode(UMAFCoreEngine.Envelope.self, from: data)
+    let env = UMAFWalkerV0_5.build(from: coreEnvelope)
+    return UMAFWalkerV0_5.ensureRootSpanAndBlock(env)
   }
 
   /// Build canonical normalized text (typically Markdown) for a file.
