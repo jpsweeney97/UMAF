@@ -106,10 +106,28 @@ final class UMAFCLIIntegrationTests: XCTestCase {
     let decoder = JSONDecoder()
     let envelope = try decoder.decode(UMAFEnvelopeV0_5.self, from: data)
 
+    XCTAssertEqual(
+      envelope.featureFlags?["structure"],
+      true,
+      "featureFlags.structure should be true when --dump-structure is used"
+    )
+
     let spansById = Dictionary(uniqueKeysWithValues: envelope.spans.map { ($0.id, $0) })
 
-    XCTAssertNotNil(spansById["span:root"])
-    XCTAssertTrue(envelope.blocks.contains(where: { $0.id == "block:root" }))
+    guard let rootSpan = spansById["span:root"] else {
+      XCTFail("Expected span:root to be present in spans")
+      return
+    }
+    XCTAssertEqual(rootSpan.startLine, 1)
+    XCTAssertEqual(rootSpan.endLine, envelope.lineCount)
+
+    guard let rootBlock = envelope.blocks.first(where: { $0.id == "block:root" }) else {
+      XCTFail("Expected block:root to be present in blocks")
+      return
+    }
+    XCTAssertEqual(rootBlock.kind, .root)
+    XCTAssertNil(rootBlock.parentId)
+    XCTAssertEqual(rootBlock.spanId, "span:root")
 
     for block in envelope.blocks {
       XCTAssertNotNil(
@@ -124,4 +142,41 @@ final class UMAFCLIIntegrationTests: XCTestCase {
       XCTAssertLessThanOrEqual(span.startLine, span.endLine)
     }
   }
+  func testDumpStructureRequiresJson() throws {
+    let root = projectRootURL()
+    let cli = cliURL()
+    XCTAssertTrue(
+      FileManager.default.fileExists(atPath: cli.path),
+      "CLI must be built before running integration test"
+    )
+
+    let proc = Process()
+    proc.executableURL = cli
+    proc.arguments = [
+      "--input", root.appendingPathComponent("README.md").path,
+      "--dump-structure",
+    ]
+    proc.currentDirectoryURL = root
+
+    let errPipe = Pipe()
+    proc.standardOutput = Pipe()
+    proc.standardError = errPipe
+
+    try proc.run()
+    proc.waitUntilExit()
+
+    XCTAssertNotEqual(
+      proc.terminationStatus,
+      0,
+      "CLI should fail when --dump-structure is used without --json"
+    )
+
+    let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+    let err = String(data: errData, encoding: .utf8) ?? ""
+    XCTAssertTrue(
+      err.contains("--dump-structure requires --json"),
+      "Expected error message about --dump-structure requiring --json, got: \(err)"
+    )
+  }
+
 }
