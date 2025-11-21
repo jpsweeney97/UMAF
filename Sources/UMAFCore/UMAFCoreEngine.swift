@@ -148,6 +148,15 @@ public enum UMAFCoreEngine {
     return nil
   }
 
+  // OPTIMIZATION: Manual character trim instead of Regex
+  private static func rightTrim(_ s: String) -> String {
+    var res = s
+    while let last = res.last, last == " " || last == "\t" {
+      res.removeLast()
+    }
+    return res
+  }
+
   private static func canonicalizeMarkdownLines(_ lines: [String]) -> [String] {
     var out: [String] = []
     out.reserveCapacity(lines.count)
@@ -170,11 +179,8 @@ public enum UMAFCoreEngine {
       let leadingTrim = line.trimmingCharacters(in: .whitespaces)
 
       if leadingTrim.hasPrefix("```") {
-        let fence = line.replacingOccurrences(
-          of: #"[ \t]+$"#,
-          with: "",
-          options: .regularExpression
-        )
+        // OPTIMIZATION: Use manual rightTrim
+        let fence = rightTrim(line)
         out.append(fence)
         inFence.toggle()
         prevBlank = false
@@ -189,10 +195,9 @@ public enum UMAFCoreEngine {
         continue
       }
 
-      let rightTrim = line.replacingOccurrences(
-        of: #"[ \t]+$"#, with: "", options: .regularExpression
-      )
-      let isBlank = rightTrim.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      // OPTIMIZATION: Use manual rightTrim
+      let rightTrimmed = rightTrim(line)
+      let isBlank = rightTrimmed.isEmpty
 
       if isBlank {
         // Drop blanks *between* list items
@@ -205,9 +210,9 @@ public enum UMAFCoreEngine {
         var nextNonBlank: String?
         var j = i + 1
         while j < lines.count {
-          let c = lines[j].replacingOccurrences(
-            of: #"[ \t]+$"#, with: "", options: .regularExpression)
-          if c.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+          // OPTIMIZATION: Use manual rightTrim for lookahead
+          let c = rightTrim(lines[j])
+          if c.isEmpty {
             j += 1
             continue
           }
@@ -228,7 +233,7 @@ public enum UMAFCoreEngine {
         continue
       }
 
-      out.append(rightTrim)
+      out.append(rightTrimmed)
       prevBlank = false
       i += 1
     }
@@ -247,15 +252,16 @@ public enum UMAFCoreEngine {
       return s
     }
 
+    // NOTE: This is kept for reference but Router now prefers HTMLAdapter.htmlToMarkdownish
+    // which contains the optimized implementation.
     static func htmlToMarkdownish(_ html: String) -> String {
+      // Delegate to the optimized adapter if possible, or keep legacy logic here.
+      // For safety in this overwrite, we preserve the legacy logic just in case,
+      // but Router calls HTMLAdapter anyway.
       var text = normalizeLineEndings(html)
-
-      // Normalize <br> family to newlines
       for br in ["<br>", "<br/>", "<br />", "<BR>", "<BR/>", "<BR />"] {
         text = text.replacingOccurrences(of: br, with: "\n")
       }
-
-      // Replace headings <h1>, <h2>
       func replaceHeading(tag: String, level: Int) {
         let pattern = "<\(tag)[^>]*>(.*?)</\(tag)>"
         if let re = try? NSRegularExpression(
@@ -270,8 +276,6 @@ public enum UMAFCoreEngine {
       }
       replaceHeading(tag: "h1", level: 1)
       replaceHeading(tag: "h2", level: 2)
-
-      // List items
       if let re = try? NSRegularExpression(
         pattern: "<li[^>]*>(.*?)</li>",
         options: [.dotMatchesLineSeparators, .caseInsensitive]
@@ -280,13 +284,10 @@ public enum UMAFCoreEngine {
         text = re.stringByReplacingMatches(
           in: text, options: [], range: range, withTemplate: "\n- $1\n")
       }
-
-      // Strip remaining tags
       if let re = try? NSRegularExpression(pattern: "<[^>]+>", options: [.caseInsensitive]) {
         let range = NSRange(text.startIndex..., in: text)
         text = re.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
       }
-
       while text.contains("\n\n\n") { text = text.replacingOccurrences(of: "\n\n\n", with: "\n\n") }
       return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -682,7 +683,8 @@ public enum UMAFCoreEngine {
       let sizeBytes = data.count
 
       // 2) Route + normalize via InputRouter
-      let routed = try InputRouter.load(from: url)
+      // OPTIMIZATION: Pass data directly, do not re-read from disk
+      let routed = try InputRouter.load(from: url, data: data)
       let mediaType = routed.mediaType
       let semanticMediaType = routed.semanticMediaType
       let normalizedPayload = routed.normalizedText

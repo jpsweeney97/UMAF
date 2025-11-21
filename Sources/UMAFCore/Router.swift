@@ -42,8 +42,8 @@ public enum InputRouter {
   ///
   /// This mirrors UMAFCoreEngine.Transformer's ext-switch logic, but rolls it
   /// into a reusable API so future callers (CLI/app/tests) can share it.
-  public static func load(from url: URL) throws -> RoutedInput {
-    let data = try Data(contentsOf: url)
+  public static func load(from url: URL, data: Data) throws -> RoutedInput {
+    // OPTIMIZATION: Data is passed in, avoiding a redundant read from disk.
     let ext = url.pathExtension.lowercased()
 
     switch ext {
