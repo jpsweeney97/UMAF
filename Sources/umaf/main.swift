@@ -1,8 +1,9 @@
 import ArgumentParser
-import Dispatch
 import Foundation
+import Dispatch
 import UMAFCore
-import os
+
+// NOTE: 'os' module is Apple-only. Removed for Linux compatibility.
 
 @main
 struct UMAFCLI: ParsableCommand {
@@ -11,7 +12,7 @@ struct UMAFCLI: ParsableCommand {
     abstract: "UMAF – Universal Machine-readable Archive Format CLI"
   )
 
-  @Option(name: .shortAndLong, help: "Path to the input file to transform.")
+  @Option(name: .shortAndLong, help: "Path to the input file to transform. Reads from stdin if omitted.")
   var input: String?
 
   @Option(name: .long, help: "Path to a directory of input files to transform (Batch Mode).")
@@ -22,6 +23,9 @@ struct UMAFCLI: ParsableCommand {
 
   @Flag(name: .long, help: "Watch input directory for changes and re-process instantly.")
   var watch: Bool = false
+  
+  @Flag(name: .long, help: "Skip files that haven't changed since the last run.")
+  var incremental: Bool = false
 
   @Flag(name: .long, help: "Output a UMAF envelope (JSON).")
   var json: Bool = false
@@ -35,9 +39,23 @@ struct UMAFCLI: ParsableCommand {
   )
   var dumpStructure: Bool = false
 
-  struct BatchState: Sendable {
+  // Thread-safe state container using NSLock (Linux compatible)
+  class BatchState {
     var successCount = 0
     var errorCount = 0
+    private let lock = NSLock()
+
+    func addSuccess() {
+        lock.lock()
+        successCount += 1
+        lock.unlock()
+    }
+
+    func addError() {
+        lock.lock()
+        errorCount += 1
+        lock.unlock()
+    }
   }
 
   func run() throws {
@@ -45,7 +63,7 @@ struct UMAFCLI: ParsableCommand {
       guard let outDir = outputDir else {
         throw ValidationError("Batch mode (--input-dir) requires --output-dir.")
       }
-
+      
       if watch {
         if #available(macOS 10.10, *) {
           try runWatchMode(inputDir: inDir, outputDir: outDir)
@@ -53,157 +71,178 @@ struct UMAFCLI: ParsableCommand {
           print("Error: Watch mode requires a modern OS.")
           throw ExitCode.failure
         }
-        // runWatchMode never returns normally, it blocks on RunLoop
       } else {
         try runBatch(inputDir: inDir, outputDir: outDir)
       }
       return
     }
 
-    guard let inputPath = input else {
-      throw ValidationError("Either --input or --input-dir must be provided.")
+    // Single File / Stdin Mode
+    if let inputPath = input {
+        let url = URL(fileURLWithPath: inputPath)
+        let data = try Data(contentsOf: url)
+        try processData(data: data, sourceURL: url, to: FileHandle.standardOutput)
+    } else {
+        let data = FileHandle.standardInput.readDataToEndOfFile()
+        if data.isEmpty {
+            print(UMAFCLI.helpMessage())
+            return
+        }
+        let dummyURL = URL(fileURLWithPath: "stdin.md")
+        try processData(data: data, sourceURL: dummyURL, to: FileHandle.standardOutput)
     }
-
-    let url = URL(fileURLWithPath: inputPath)
-    try processSingleFile(url: url, to: FileHandle.standardOutput)
   }
 
-  /// Continuous Watch Mode
   func runWatchMode(inputDir: String, outputDir: String) throws {
     print("👀 Watching \(inputDir) for changes...")
+    try? runBatch(inputDir: inputDir, outputDir: outputDir, forceIncremental: true)
 
-    // 1. Initial Run
-    try? runBatch(inputDir: inputDir, outputDir: outputDir)
-
+    // DispatchSource is available on Linux but implementation details vary. 
+    // For strict Linux compat in Watch Mode, we rely on the #available check in run()
+    // which restricts this to macOS for now (Watch mode is typically a local dev feature).
+    // Compiling this block on Linux requires ensuring DispatchSource symbols exist.
+    // Fortunately, swift-corelibs-dispatch provides them on Linux.
+    
     let inUrl = URL(fileURLWithPath: inputDir)
     let fileDescriptor = open(inUrl.path, O_EVTONLY)
-
+    
     guard fileDescriptor >= 0 else {
-      print("❌ Failed to open directory for watching.")
-      throw ExitCode.failure
+        print("❌ Failed to open directory for watching.")
+        throw ExitCode.failure
     }
 
     let source = DispatchSource.makeFileSystemObjectSource(
-      fileDescriptor: fileDescriptor,
-      eventMask: .write,
-      queue: DispatchQueue.global()
+        fileDescriptor: fileDescriptor,
+        eventMask: .write,
+        queue: DispatchQueue.global()
     )
 
-    // Simple debounce
     var timer: DispatchSourceTimer?
 
     source.setEventHandler {
-      timer?.cancel()
-      timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global())
-      timer?.schedule(deadline: .now() + 0.2)  // 200ms debounce
-      timer?.setEventHandler {
-        print("\n🔄 Change detected. Re-processing...")
-        do {
-          try self.runBatch(inputDir: inputDir, outputDir: outputDir)
-        } catch {
-          print("Error during re-process: \(error)")
+        timer?.cancel()
+        timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global())
+        timer?.schedule(deadline: .now() + 0.2)
+        timer?.setEventHandler {
+            print("\n🔄 Change detected. Re-processing...")
+            do {
+                try self.runBatch(inputDir: inputDir, outputDir: outputDir, forceIncremental: true)
+            } catch {
+                print("Error during re-process: \(error)")
+            }
         }
-      }
-      timer?.resume()
+        timer?.resume()
     }
 
-    source.setCancelHandler {
-      close(fileDescriptor)
-    }
-
+    source.setCancelHandler { close(fileDescriptor) }
     source.resume()
-
-    // Keep process alive
     dispatchMain()
   }
 
-  /// Process a directory of files in PARALLEL using all available cores.
-  func runBatch(inputDir: String, outputDir: String) throws {
+  func runBatch(inputDir: String, outputDir: String, forceIncremental: Bool = false) throws {
     let fm = FileManager.default
     let inUrl = URL(fileURLWithPath: inputDir)
     let outUrl = URL(fileURLWithPath: outputDir)
+    let useCache = incremental || forceIncremental
 
     if !fm.fileExists(atPath: outputDir) {
       try fm.createDirectory(at: outUrl, withIntermediateDirectories: true)
     }
 
+    let cache = useCache ? IncrementalCache(inputDir: inUrl) : nil
+
+    print("→ Scanning \(inputDir)...")
     let resourceKeys: [URLResourceKey] = [.isRegularFileKey]
-    guard
-      let enumerator = fm.enumerator(
-        at: inUrl,
-        includingPropertiesForKeys: resourceKeys,
-        options: [.skipsHiddenFiles]
-      )
-    else {
+    guard let enumerator = fm.enumerator(
+      at: inUrl,
+      includingPropertiesForKeys: resourceKeys,
+      options: [.skipsHiddenFiles]
+    ) else {
       throw ValidationError("Could not read input directory.")
     }
 
     var filesToProcess: [URL] = []
     for case let fileURL as URL in enumerator {
       guard let resourceValues = try? fileURL.resourceValues(forKeys: Set(resourceKeys)),
-        resourceValues.isRegularFile == true
+            resourceValues.isRegularFile == true
       else { continue }
 
       let ext = fileURL.pathExtension.lowercased()
       if ["md", "txt", "json", "html", "pdf", "docx"].contains(ext) {
-        filesToProcess.append(fileURL)
+        if let cache = cache {
+            let path = fileURL.path.replacingOccurrences(of: inUrl.path + "/", with: "")
+            if cache.shouldProcess(fileURL: fileURL, relativePath: path) {
+                filesToProcess.append(fileURL)
+            }
+        } else {
+            filesToProcess.append(fileURL)
+        }
       }
     }
 
+    if filesToProcess.isEmpty {
+        print("✨ No changes detected. All files up to date.")
+        return
+    }
+
+    print("→ Parallel processing \(filesToProcess.count) files...")
+
     let engine = UMAFEngine()
-    let state = OSAllocatedUnfairLock(initialState: BatchState())
+    let state = BatchState() // Use our new NSLock-based class
 
     DispatchQueue.concurrentPerform(iterations: filesToProcess.count) { index in
       let fileURL = filesToProcess[index]
       let filename = fileURL.lastPathComponent
-
+      let relativePath = fileURL.path.replacingOccurrences(of: inUrl.path + "/", with: "")
+      
       let outFilename: String
-      if json {
-        outFilename = filename + ".json"
-      } else if normalized {
-        outFilename = filename + ".md"
-      } else {
-        outFilename = filename + ".json"
-      }
-
+      if json { outFilename = filename + ".json" }
+      else if normalized { outFilename = filename + ".md" }
+      else { outFilename = filename + ".json" }
+      
       let destination = outUrl.appendingPathComponent(outFilename)
 
       do {
-        if !FileManager.default.createFile(atPath: destination.path, contents: nil) {
-          state.withLock { $0.errorCount += 1 }
-          return
-        }
-
-        let handle = try FileHandle(forWritingTo: destination)
-        try processSingleFile(url: fileURL, to: handle, engine: engine)
-        try handle.close()
-
-        state.withLock { $0.successCount += 1 }
+        let data = try Data(contentsOf: fileURL)
+        let outputData = try processDataToMemory(data: data, sourceURL: fileURL, engine: engine)
+        
+        try atomicWrite(data: outputData, to: destination)
+        
+        cache?.didProcess(fileURL: fileURL, relativePath: relativePath)
+        state.addSuccess()
       } catch {
-        state.withLock { $0.errorCount += 1 }
-        // In watch mode, we might want to be quieter about transient errors,
-        // but for now logging is safer.
+        state.addError()
         print("❌ Failed to process \(filename): \(error)")
       }
     }
 
-    let finalState = state.withLock { $0 }
-    print(
-      "✔ Batch complete. Processed \(finalState.successCount) files. Errors: \(finalState.errorCount)."
-    )
+    cache?.save()
+
+    print("✔ Batch complete. Processed: \(state.successCount), Errors: \(state.errorCount).")
+    
+    if state.errorCount > 0 {
+        throw ExitCode.failure
+    }
   }
 
-  func processSingleFile(
-    url: URL,
-    to handle: FileHandle,
-    engine: UMAFEngine = UMAFEngine()
-  ) throws {
+  func atomicWrite(data: Data, to url: URL) throws {
+    let tempURL = url.appendingPathExtension("tmp")
+    try data.write(to: tempURL, options: .atomic)
+    try? FileManager.default.removeItem(at: url)
+    try FileManager.default.moveItem(at: tempURL, to: url)
+  }
+
+  func processDataToMemory(
+    data: Data,
+    sourceURL: URL,
+    engine: UMAFEngine
+  ) throws -> Data {
     if dumpStructure && !json {
       throw ValidationError("--dump-structure requires --json")
     }
 
     if json {
-      var env = try engine.envelope(for: url)
+      var env = try engine.envelope(for: sourceURL)
       if dumpStructure {
         env = UMAFNormalization.withRootSpanAndBlock(env)
         var flags = env.featureFlags ?? [:]
@@ -212,22 +251,39 @@ struct UMAFCLI: ParsableCommand {
       }
       let enc = JSONEncoder()
       enc.outputFormatting = [.prettyPrinted, .sortedKeys]
-      let data = try enc.encode(env)
-      handle.write(data)
-      handle.write(Data([0x0a]))
+      var out = try enc.encode(env)
+      out.append(0x0a)
+      return out
     } else if normalized {
-      let text = try engine.normalizedText(for: url)
-      handle.write(Data(text.utf8))
-      if !text.hasSuffix("\n") {
-        handle.write(Data([0x0a]))
-      }
+      let text = try engine.normalizedText(for: sourceURL)
+      var out = Data(text.utf8)
+      if !text.hasSuffix("\n") { out.append(0x0a) }
+      return out
     } else {
-      let env = try engine.envelope(for: url)
+      let env = try engine.envelope(for: sourceURL)
       let enc = JSONEncoder()
       enc.outputFormatting = [.prettyPrinted, .sortedKeys]
-      let data = try enc.encode(env)
-      handle.write(data)
-      handle.write(Data([0x0a]))
+      var out = try enc.encode(env)
+      out.append(0x0a)
+      return out
+    }
+  }
+
+  func processData(
+    data: Data, 
+    sourceURL: URL, 
+    to handle: FileHandle, 
+    engine: UMAFEngine = UMAFEngine()
+  ) throws {
+    if sourceURL.path == "stdin.md" {
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".md")
+        try data.write(to: tmp)
+        let outData = try processDataToMemory(data: data, sourceURL: tmp, engine: engine)
+        handle.write(outData)
+        try? FileManager.default.removeItem(at: tmp)
+    } else {
+        let outData = try processDataToMemory(data: data, sourceURL: sourceURL, engine: engine)
+        handle.write(outData)
     }
   }
 }

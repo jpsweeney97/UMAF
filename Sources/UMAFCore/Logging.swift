@@ -1,10 +1,27 @@
 //
 //  Logging.swift
-//  UMAF — structured logging wrappers
+//  UMAF — structured logging wrappers (Linux compatible)
 //
 
 import Foundation
+
+#if canImport(OSLog)
 import OSLog
+#else
+// Minimal shim for Linux where OSLog is unavailable
+public struct Logger {
+    let label: String
+    public init(subsystem: String, category: String) {
+        self.label = "[\(category)]"
+    }
+    
+    public func debug(_ msg: String) { print("\(label) DEBUG: \(msg)") }
+    public func info(_ msg: String) { print("\(label) INFO: \(msg)") }
+    public func notice(_ msg: String) { print("\(label) NOTICE: \(msg)") }
+    public func error(_ msg: String) { fputs("\(label) ERROR: \(msg)\n", stderr) }
+    public func fault(_ msg: String) { fputs("\(label) FAULT: \(msg)\n", stderr) }
+}
+#endif
 
 public enum UMAFLog {
     public static let subsystem = "dev.umaf.core"
