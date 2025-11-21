@@ -11,3 +11,7 @@ DerivedData/
 node_modules/
 *.patch
 
+# UMAF specific ignores
+/dist
+.umaf-cache.json
+*.tmp
