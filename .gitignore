@@ -9,3 +9,5 @@ DerivedData/
 /node_modules
 /site
 node_modules/
+*.patch
+
