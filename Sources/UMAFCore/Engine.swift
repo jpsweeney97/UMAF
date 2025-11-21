@@ -22,12 +22,13 @@ public struct UMAFEngine {
     options: Options = Options()
   ) throws -> UMAFEnvelopeV0_5 {
     let transformer = UMAFCoreEngine.Transformer()
-    let data = try transformer.transformFile(
+    let result = try transformer.transformFile(
       inputURL: url,
       outputFormat: .jsonEnvelope
     )
-    let decoder = JSONDecoder()
-    let coreEnvelope = try decoder.decode(UMAFCoreEngine.Envelope.self, from: data)
+    guard case .envelope(let coreEnvelope) = result else {
+      throw UMAFUserError.internalError("Expected envelope output but received markdown.")
+    }
     let env = UMAFWalkerV0_5.build(from: coreEnvelope)
     return UMAFWalkerV0_5.ensureRootSpanAndBlock(env)
   }
@@ -38,13 +39,13 @@ public struct UMAFEngine {
     options: Options = Options()
   ) throws -> String {
     let transformer = UMAFCoreEngine.Transformer()
-    let data = try transformer.transformFile(
+    let result = try transformer.transformFile(
       inputURL: url,
       outputFormat: .markdown
     )
-    guard let s = String(data: data, encoding: .utf8) else {
-      throw UMAFUserError.internalError("Failed to decode normalized text as UTF-8.")
+    if case .markdown(let text) = result {
+      return text
     }
-    return s
+    throw UMAFUserError.internalError("Expected markdown output but received an envelope.")
   }
 }

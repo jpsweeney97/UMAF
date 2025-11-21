@@ -35,32 +35,23 @@ final class SchemaValidationTests: XCTestCase {
     try md.data(using: .utf8)!.write(to: inputURL)
 
     let transformer = UMAFCoreEngine.Transformer()
-    let data = try transformer.transformFile(inputURL: inputURL, outputFormat: .jsonEnvelope)
-
-    let jsonAny = try JSONSerialization.jsonObject(with: data, options: [])
-    guard let obj = jsonAny as? [String: Any] else {
-      XCTFail("Envelope was not a JSON object")
+    let result = try transformer.transformFile(inputURL: inputURL, outputFormat: .jsonEnvelope)
+    guard case .envelope(let env) = result else {
+      XCTFail("Expected envelope result")
       return
     }
 
-    // These mirror the "required" keys in umaf_envelope_v0_5.json
-    let requiredKeys = [
-      "version",
-      "docTitle",
-      "docId",
-      "createdAt",
-      "sourceHash",
-      "sourcePath",
-      "mediaType",
-      "encoding",
-      "sizeBytes",
-      "lineCount",
-      "normalized",
-    ]
-
-    for key in requiredKeys {
-      XCTAssertNotNil(obj[key], "Envelope is missing required key: \(key)")
-    }
+    XCTAssertFalse(env.version.isEmpty)
+    XCTAssertFalse(env.docTitle.isEmpty)
+    XCTAssertFalse(env.docId.isEmpty)
+    XCTAssertFalse(env.createdAt.isEmpty)
+    XCTAssertFalse(env.sourceHash.isEmpty)
+    XCTAssertFalse(env.sourcePath.isEmpty)
+    XCTAssertFalse(env.mediaType.isEmpty)
+    XCTAssertFalse(env.encoding.isEmpty)
+    XCTAssertGreaterThan(env.sizeBytes, 0)
+    XCTAssertGreaterThan(env.lineCount, 0)
+    XCTAssertFalse(env.normalized.isEmpty)
   }
 
   /// Property-style test: lineCount must equal the number of lines
@@ -82,9 +73,12 @@ final class SchemaValidationTests: XCTestCase {
     try md.data(using: .utf8)!.write(to: inputURL)
 
     let transformer = UMAFCoreEngine.Transformer()
-    let data = try transformer.transformFile(inputURL: inputURL, outputFormat: .jsonEnvelope)
+    let result = try transformer.transformFile(inputURL: inputURL, outputFormat: .jsonEnvelope)
+    guard case .envelope(let env) = result else {
+      XCTFail("Expected envelope result")
+      return
+    }
 
-    let env = try UMAFNormalization.envelopeV0_5(fromJSONData: data)
     let lines = env.normalized.split(separator: "\n", omittingEmptySubsequences: false)
     XCTAssertEqual(
       env.lineCount,
@@ -111,15 +105,20 @@ final class SchemaValidationTests: XCTestCase {
     try md.data(using: .utf8)!.write(to: inputURL)
 
     let transformer = UMAFCoreEngine.Transformer()
-    let data = try transformer.transformFile(inputURL: inputURL, outputFormat: .jsonEnvelope)
+    let result = try transformer.transformFile(inputURL: inputURL, outputFormat: .jsonEnvelope)
+    guard case .envelope(let coreEnv) = result else {
+      XCTFail("Expected envelope result")
+      return
+    }
 
-    let env1 = try UMAFNormalization.envelopeV0_5(fromJSONData: data)
+    let env1 = UMAFWalkerV0_5.ensureRootSpanAndBlock(UMAFWalkerV0_5.build(from: coreEnv))
 
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
     let encoded = try encoder.encode(env1)
 
-    let env2 = try UMAFNormalization.envelopeV0_5(fromJSONData: encoded)
+    let decoder = JSONDecoder()
+    let env2 = try decoder.decode(UMAFEnvelopeV0_5.self, from: encoded)
 
     XCTAssertEqual(env1.version, env2.version)
     XCTAssertEqual(env1.docTitle, env2.docTitle)

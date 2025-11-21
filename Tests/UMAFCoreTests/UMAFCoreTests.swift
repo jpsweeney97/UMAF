@@ -51,13 +51,16 @@ final class UMAFCoreTests: XCTestCase {
     try md.data(using: .utf8)!.write(to: inputURL)
 
     let transformer = UMAFCoreEngine.Transformer()
-    let data = try transformer.transformFile(inputURL: inputURL, outputFormat: .jsonEnvelope)
-    let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    let result = try transformer.transformFile(inputURL: inputURL, outputFormat: .jsonEnvelope)
+    guard case .envelope(let env) = result else {
+      XCTFail("Expected envelope result")
+      return
+    }
 
-    XCTAssertEqual(json?["version"] as? String, "umaf-0.5.0")
-    XCTAssertEqual(json?["mediaType"] as? String, "text/markdown")
-    XCTAssertNotNil(json?["normalized"] as? String)
-    XCTAssertGreaterThan(json?["lineCount"] as? Int ?? 0, 0)
+    XCTAssertEqual(env.version, "umaf-0.5.0")
+    XCTAssertEqual(env.mediaType, "text/markdown")
+    XCTAssertFalse(env.normalized.isEmpty)
+    XCTAssertGreaterThan(env.lineCount, 0)
   }
 
   func testIdempotentNormalization() throws {
@@ -81,16 +84,34 @@ final class UMAFCoreTests: XCTestCase {
     try md.data(using: .utf8)!.write(to: inputURL)
 
     let transformer = UMAFCoreEngine.Transformer()
-    let envData = try transformer.transformFile(inputURL: inputURL, outputFormat: .jsonEnvelope)
-    let normData = try transformer.transformFile(inputURL: inputURL, outputFormat: .markdown)
+    let envResult = try transformer.transformFile(inputURL: inputURL, outputFormat: .jsonEnvelope)
+    let normResult = try transformer.transformFile(inputURL: inputURL, outputFormat: .markdown)
+
+    guard case .envelope(let env) = envResult else {
+      XCTFail("Expected envelope result")
+      return
+    }
+    guard case .markdown(let norm) = normResult else {
+      XCTFail("Expected markdown result")
+      return
+    }
+
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    let envData = try encoder.encode(env)
 
     // feed normalized back into the transformer; it should remain stable
     let normalizedPath = tmpDir.appendingPathComponent("normalized.md")
-    try normData.write(to: normalizedPath)
-    let envData2 = try transformer.transformFile(
+    try Data(norm.utf8).write(to: normalizedPath)
+    let envResult2 = try transformer.transformFile(
       inputURL: normalizedPath,
       outputFormat: .jsonEnvelope
     )
+    guard case .envelope(let env2) = envResult2 else {
+      XCTFail("Expected envelope result")
+      return
+    }
+    let envData2 = try encoder.encode(env2)
 
     XCTAssertGreaterThan(envData.count, 0)
     XCTAssertEqual(
@@ -106,9 +127,13 @@ final class UMAFCoreTests: XCTestCase {
   func testCrucibleMarkdownProducesValidEnvelope() throws {
     let crucible = try crucibleURL()
     let transformer = UMAFCoreEngine.Transformer()
-    let data = try transformer.transformFile(inputURL: crucible, outputFormat: .jsonEnvelope)
+    let result = try transformer.transformFile(inputURL: crucible, outputFormat: .jsonEnvelope)
+    guard case .envelope(let coreEnv) = result else {
+      XCTFail("Expected envelope result")
+      return
+    }
 
-    let env = try UMAFNormalization.envelopeV0_5(fromJSONData: data)
+    let env = UMAFWalkerV0_5.ensureRootSpanAndBlock(UMAFWalkerV0_5.build(from: coreEnv))
     XCTAssertEqual(env.version, "umaf-0.5.0")
     XCTAssertGreaterThan(env.lineCount, 0)
     XCTAssertFalse(env.normalized.isEmpty)
@@ -122,12 +147,12 @@ final class UMAFCoreTests: XCTestCase {
     let transformer = UMAFCoreEngine.Transformer()
 
     // First normalization from the original crucible Markdown
-    let norm1Data = try transformer.transformFile(
+    let norm1Result = try transformer.transformFile(
       inputURL: crucible,
       outputFormat: .markdown
     )
-    guard let norm1 = String(data: norm1Data, encoding: .utf8) else {
-      XCTFail("Failed to decode first normalized Markdown as UTF-8")
+    guard case .markdown(let norm1) = norm1Result else {
+      XCTFail("Expected markdown result")
       return
     }
 
@@ -138,15 +163,15 @@ final class UMAFCoreTests: XCTestCase {
     )
     try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
     let norm1URL = tmpDir.appendingPathComponent("crucible-normalized.md")
-    try norm1Data.write(to: norm1URL)
+    try Data(norm1.utf8).write(to: norm1URL)
 
     // Second normalization, starting from already-normalized Markdown
-    let norm2Data = try transformer.transformFile(
+    let norm2Result = try transformer.transformFile(
       inputURL: norm1URL,
       outputFormat: .markdown
     )
-    guard let norm2 = String(data: norm2Data, encoding: .utf8) else {
-      XCTFail("Failed to decode second normalized Markdown as UTF-8")
+    guard case .markdown(let norm2) = norm2Result else {
+      XCTFail("Expected markdown result")
       return
     }
 

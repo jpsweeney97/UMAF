@@ -51,7 +51,7 @@ public enum InputRouter {
       let mediaType = "text/markdown"
       let semanticMediaType = "text/markdown"
       let raw = stringFromData(data)
-      let normalized = UMAFCoreEngine.Prework.normalizeLineEndings(raw)
+      let normalized = TextNormalization.normalizeLineEndings(raw)
       return RoutedInput(
         normalizedText: normalized,
         mediaType: mediaType,
@@ -62,7 +62,7 @@ public enum InputRouter {
       let mediaType = "application/json"
       let semanticMediaType = "application/json"
       let raw = stringFromData(data)
-      let normalizedText = UMAFCoreEngine.Prework.normalizeLineEndings(raw)
+      let normalizedText = TextNormalization.normalizeLineEndings(raw)
       let obj = try JSONSerialization.jsonObject(with: Data(normalizedText.utf8))
       let canonical = try JSONSerialization.data(
         withJSONObject: obj,
@@ -95,7 +95,7 @@ public enum InputRouter {
       }
       let semanticMediaType = "text/plain"
       let extracted = try DOCXAdapter.extractPlainText(usingTextUtilFrom: url)
-      let normalized = UMAFCoreEngine.Prework.normalizeLineEndings(extracted)
+      let normalized = TextNormalization.normalizeLineEndings(extracted)
       return RoutedInput(
         normalizedText: normalized,
         mediaType: mediaType,
@@ -106,7 +106,7 @@ public enum InputRouter {
       let mediaType = "application/pdf"
       let semanticMediaType = "text/markdown"
       let markdownish = try PDFKitAdapter.extractMarkdownish(from: url)
-      let normalized = UMAFCoreEngine.Prework.normalizeLineEndings(markdownish)
+      let normalized = TextNormalization.normalizeLineEndings(markdownish)
       return RoutedInput(
         normalizedText: normalized,
         mediaType: mediaType,
@@ -117,7 +117,7 @@ public enum InputRouter {
       let mediaType = "text/plain"
       let semanticMediaType = "text/plain"
       let raw = stringFromData(data)
-      let normalized = UMAFCoreEngine.Prework.normalizeLineEndings(raw)
+      let normalized = TextNormalization.normalizeLineEndings(raw)
       return RoutedInput(
         normalizedText: normalized,
         mediaType: mediaType,

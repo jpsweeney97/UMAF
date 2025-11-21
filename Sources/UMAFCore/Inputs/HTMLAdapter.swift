@@ -11,10 +11,8 @@
 //
 //  Adapter for converting HTML into Markdown-ish text.
 //
-// For now this wraps UMAFCoreEngine.Prework.htmlToMarkdownish, which uses
-// regex-based transforms. Later you can plug in SwiftSoup here without
+// Regex-based transforms. Later you can plug in SwiftSoup here without
 // touching callers.
-//
 
 import Foundation
 
@@ -43,7 +41,7 @@ public enum HTMLAdapter {
 
   /// Convert an HTML document (as a String) to a Markdown-ish representation.
   public static func htmlToMarkdownish(_ html: String) -> String {
-    var text = UMAFCoreEngine.Prework.normalizeLineEndings(html)
+    var text = TextNormalization.normalizeLineEndings(html)
 
     // Normalize <br> family
     for br in ["<br>", "<br/>", "<br />", "<BR>", "<BR/>", "<BR />"] {

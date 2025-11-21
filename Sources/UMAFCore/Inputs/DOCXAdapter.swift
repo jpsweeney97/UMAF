@@ -23,8 +23,27 @@ public enum DOCXAdapter {
   /// - .doc
   /// - .docx
   ///
-  /// Currently delegates to UMAFCoreEngine.Prework.extractTextWithTextUtil.
   public static func extractPlainText(usingTextUtilFrom url: URL) throws -> String {
-    return try UMAFCoreEngine.Prework.extractTextWithTextUtil(from: url)
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/textutil")
+    process.arguments = ["-convert", "txt", "-stdout", url.path]
+
+    let out = Pipe()
+    let err = Pipe()
+    process.standardOutput = out
+    process.standardError = err
+
+    try process.run()
+    process.waitUntilExit()
+
+    guard process.terminationStatus == 0 else {
+      let msg = String(decoding: err.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+      throw NSError(
+        domain: "UMAF", code: 2,
+        userInfo: [NSLocalizedDescriptionKey: "textutil failed: \(msg)"])
+    }
+
+    let data = out.fileHandleForReading.readDataToEndOfFile()
+    return String(decoding: data, as: UTF8.self)
   }
 }
