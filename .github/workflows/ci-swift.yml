@@ -8,10 +8,14 @@ on:
 
 jobs:
   build-and-test:
-    # FIXED: Pin to ubuntu-22.04 until Swift supports 24.04
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
+      # HOTFIX: Manually import Swift keys to bypass flaky keyservers
+      - name: Import Swift GPG Keys
+        run: |
+          curl -s https://swift.org/keys/all-keys.asc | gpg --import -
 
       # 1. Setup Swift
       - name: Select Swift
@@ -28,20 +32,17 @@ jobs:
         run: swift test --parallel
 
       # 4. Integration Test: Parallel Batch Mode
-      # This confirms the new --input-dir flag works on Linux
       - name: Test Parallel Batch Processing
         run: |
           mkdir -p dist
           ./.build/release/umaf --input-dir crucible --output-dir dist --json
           ls -la dist
-          # Verify at least one expected file exists
           if [ ! -f dist/markdown-crucible-v2.md.json ]; then
             echo "❌ Batch processing failed to generate output"
             exit 1
           fi
           echo "✅ Batch processing successful"
 
-      # 5. Smoke Test: Watch Mode (Help only)
-      # We can't run --watch because it blocks, but we verify the flag doesn't crash argument parsing
+      # 5. Smoke Test: Watch Mode
       - name: Verify Watch Flag Exists
         run: ./.build/release/umaf --help | grep "\-\-watch"
