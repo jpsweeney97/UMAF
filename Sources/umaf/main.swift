@@ -63,8 +63,6 @@ struct UMAFCLI: ParsableCommand {
       }
       
       if watch {
-        // Watch mode logic is OS-specific (kqueue vs inotify)
-        // For this CLI, we only support the macOS implementation.
         #if os(macOS)
         if #available(macOS 10.10, *) {
           try runWatchMode(inputDir: inDir, outputDir: outDir)
