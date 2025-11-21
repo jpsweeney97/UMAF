@@ -5,7 +5,10 @@
 
 import Crypto
 import Foundation
+
+#if canImport(PDFKit)
 import PDFKit
+#endif
 
 // A tiny namespace so this file never collides with app-local symbols.
 public enum UMAFCoreEngine {
@@ -317,6 +320,7 @@ public enum UMAFCoreEngine {
     }
 
     static func extractPdfToMarkdownish(from url: URL) throws -> String {
+      #if canImport(PDFKit)
       guard let doc = PDFDocument(url: url) else {
         throw NSError(
           domain: "UMAF", code: 3,
@@ -336,6 +340,9 @@ public enum UMAFCoreEngine {
         if pageIndex != doc.pageCount - 1 { lines.append("") }
       }
       return normalizeLineEndings(lines.joined(separator: "\n"))
+      #else
+      throw NSError(domain: "UMAF", code: 404, userInfo: [NSLocalizedDescriptionKey: "PDFKit is not available."])
+      #endif
     }
   }
 
@@ -610,7 +617,9 @@ public enum UMAFCoreEngine {
       return canonicalizeMarkdownLines(lines).joined(separator: "\n")
 
     case "application/json":
-      return ["```json", normalizedPayload, "```"].joined(separator: "\n")
+      // Using explicit code fence concatenation to avoid copy-paste artifacts
+      let fence = "```"
+      return [fence + "json", normalizedPayload, fence].joined(separator: "\n")
 
     default:
       if let doc = sections.first {
@@ -666,7 +675,9 @@ public enum UMAFCoreEngine {
 
         return canonicalizeMarkdownLines(lines).joined(separator: "\n")
       } else {
-        return ["```text", normalizedPayload, "```"].joined(separator: "\n")
+        // Explicit fencing again
+        let fence = "```"
+        return [fence + "text", normalizedPayload, fence].joined(separator: "\n")
       }
     }
   }

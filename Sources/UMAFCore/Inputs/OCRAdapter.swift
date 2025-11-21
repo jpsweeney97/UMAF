@@ -2,31 +2,23 @@
 //  OCRAdapter.swift
 //  UMAFCore
 //
-//  Created by JP Sweeney on 11/19/25.
-//
-
-//
-//  OCRAdapter.swift
-//  UMAFCore
-//
 //  Adapter for extracting text from images using Vision OCR.
 //
 
 import Foundation
+
+#if canImport(Vision)
 import Vision
+#endif
 
 public enum OCRAdapter {
 
   /// Recognize text from an image file using VNRecognizeTextRequest.
-  ///
-  /// - Parameters:
-  ///   - url: URL to an image file (png, jpeg, tiff, etc.).
-  ///   - languageHints: Optional BCP-47 language codes (e.g. ["en-US"]).
-  /// - Returns: Recognized text, joined with newlines.
   public static func recognizeText(
     from url: URL,
     languageHints: [String] = ["en-US"]
   ) throws -> String {
+    #if canImport(Vision)
     let request = VNRecognizeTextRequest()
     request.recognitionLevel = .accurate
     request.usesLanguageCorrection = true
@@ -51,6 +43,13 @@ public enum OCRAdapter {
     }
 
     return lines.joined(separator: "\n")
+    #else
+    // Fallback for Linux / non-Apple platforms
+    throw NSError(
+        domain: "UMAF", 
+        code: 404, 
+        userInfo: [NSLocalizedDescriptionKey: "OCR is only supported on macOS/iOS (requires Vision framework)."]
+    )
+    #endif
   }
-
 }
