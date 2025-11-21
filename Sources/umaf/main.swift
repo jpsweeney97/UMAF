@@ -1,6 +1,8 @@
 import ArgumentParser
 import Foundation
+import Dispatch
 import UMAFCore
+import os
 
 @main
 struct UMAFCLI: ParsableCommand {
@@ -30,8 +32,13 @@ struct UMAFCLI: ParsableCommand {
   )
   var dumpStructure: Bool = false
 
+  // Thread-safe state container
+  struct BatchState: Sendable {
+    var successCount = 0
+    var errorCount = 0
+  }
+
   func run() throws {
-    // 1. Batch Mode
     if let inDir = inputDir {
       guard let outDir = outputDir else {
         throw ValidationError("Batch mode (--input-dir) requires --output-dir.")
@@ -40,7 +47,6 @@ struct UMAFCLI: ParsableCommand {
       return
     }
 
-    // 2. Single File Mode
     guard let inputPath = input else {
       throw ValidationError("Either --input or --input-dir must be provided.")
     }
@@ -49,72 +55,80 @@ struct UMAFCLI: ParsableCommand {
     try processSingleFile(url: url, to: FileHandle.standardOutput)
   }
 
-  /// Process a directory of files serially (avoids process spawn overhead).
   func runBatch(inputDir: String, outputDir: String) throws {
     let fm = FileManager.default
     let inUrl = URL(fileURLWithPath: inputDir)
     let outUrl = URL(fileURLWithPath: outputDir)
 
-    // Create output dir if missing
     if !fm.fileExists(atPath: outputDir) {
       try fm.createDirectory(at: outUrl, withIntermediateDirectories: true)
     }
 
+    print("→ Scanning \(inputDir)...")
     let resourceKeys: [URLResourceKey] = [.isRegularFileKey]
-    let enumerator = fm.enumerator(
+    guard let enumerator = fm.enumerator(
       at: inUrl,
       includingPropertiesForKeys: resourceKeys,
       options: [.skipsHiddenFiles]
-    )!
+    ) else {
+      throw ValidationError("Could not read input directory.")
+    }
 
-    let engine = UMAFEngine() // Initialize engine once
-
-    print("→ Batch processing \(inputDir)...")
-    var count = 0
-    var errors = 0
-
+    var filesToProcess: [URL] = []
     for case let fileURL as URL in enumerator {
       guard let resourceValues = try? fileURL.resourceValues(forKeys: Set(resourceKeys)),
             resourceValues.isRegularFile == true
       else { continue }
 
-      // Simple extension filter
       let ext = fileURL.pathExtension.lowercased()
-      guard ["md", "txt", "json", "html", "pdf", "docx"].contains(ext) else { continue }
-
-      // Determine output filename
-      let filename = fileURL.lastPathComponent
-      let outFilename: String
-      if json {
-        outFilename = filename + ".json"
-      } else if normalized {
-        outFilename = filename + ".md" // simplify normalization to .md
-      } else {
-        outFilename = filename + ".json" // default
+      if ["md", "txt", "json", "html", "pdf", "docx"].contains(ext) {
+        filesToProcess.append(fileURL)
       }
+    }
+
+    print("→ Parallel processing \(filesToProcess.count) files...")
+
+    let engine = UMAFEngine()
+    // OPTIMIZATION: Use OSAllocatedUnfairLock to protect the state struct
+    let state = OSAllocatedUnfairLock(initialState: BatchState())
+
+    DispatchQueue.concurrentPerform(iterations: filesToProcess.count) { index in
+      let fileURL = filesToProcess[index]
+      let filename = fileURL.lastPathComponent
+      
+      let outFilename: String
+      if json { outFilename = filename + ".json" }
+      else if normalized { outFilename = filename + ".md" }
+      else { outFilename = filename + ".json" }
       
       let destination = outUrl.appendingPathComponent(outFilename)
 
-      // Process
       do {
-        // We manually manage the file handle to write to disk
-        if !fm.createFile(atPath: destination.path, contents: nil) {
+        // Create file (thread-safe because paths are unique)
+        if !FileManager.default.createFile(atPath: destination.path, contents: nil) {
+             state.withLock { $0.errorCount += 1 }
+             // Use a local print to avoid locking just for console output if possible, 
+             // but strictly speaking print is not guaranteed atomic. 
+             // For CLI tools, occasional interleaved output is acceptable vs locking overhead.
              print("❌ Failed to create output file: \(destination.path)")
-             errors += 1
-             continue
+             return
         }
+        
         let handle = try FileHandle(forWritingTo: destination)
         try processSingleFile(url: fileURL, to: handle, engine: engine)
         try handle.close()
-        count += 1
+        
+        state.withLock { $0.successCount += 1 }
       } catch {
+        state.withLock { $0.errorCount += 1 }
         print("❌ Failed to process \(filename): \(error)")
-        errors += 1
       }
     }
-    print("✔ Processed \(count) files with \(errors) errors.")
+
+    let finalState = state.withLock { $0 }
+    print("✔ Batch complete. Processed \(finalState.successCount) files. Errors: \(finalState.errorCount).")
     
-    if errors > 0 {
+    if finalState.errorCount > 0 {
         throw ExitCode.failure
     }
   }
@@ -140,7 +154,7 @@ struct UMAFCLI: ParsableCommand {
       enc.outputFormatting = [.prettyPrinted, .sortedKeys]
       let data = try enc.encode(env)
       handle.write(data)
-      handle.write(Data([0x0a]))  // newline
+      handle.write(Data([0x0a]))
     } else if normalized {
       let text = try engine.normalizedText(for: url)
       handle.write(Data(text.utf8))
@@ -148,7 +162,6 @@ struct UMAFCLI: ParsableCommand {
         handle.write(Data([0x0a]))
       }
     } else {
-      // default: emit envelope JSON
       let env = try engine.envelope(for: url)
       let enc = JSONEncoder()
       enc.outputFormatting = [.prettyPrinted, .sortedKeys]
