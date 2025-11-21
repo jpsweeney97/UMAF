@@ -8,7 +8,8 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    # FIXED: Pin to ubuntu-22.04 until Swift supports 24.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
