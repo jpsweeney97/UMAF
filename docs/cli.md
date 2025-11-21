@@ -4,22 +4,40 @@
 umaf --help
 ```
 
-Core flags:
+## Core flags
 
-- `-i, --input` input path (required)
-- `--json` output UMAF envelope JSON (default if no other mode is set)
-- `--normalized` output canonical normalized text (Markdown where possible)
-- `--dump-structure` (with `--json`) populate structural `spans`/`blocks` and set `featureFlags.structure = true`
+- `-i, --input <path>`: Single file input mode.
+- `--input-dir <path>`: **Batch Mode** input directory (scans recursively).
+- `--output-dir <path>`: **Batch Mode** output directory (required with `--input-dir`).
+- `--watch`: Watch input directory for changes and re-process instantly.
+- `--json`: Output UMAF envelope JSON (default).
+- `--normalized`: Output canonical normalized text (Markdown where possible).
+- `--dump-structure`: (with `--json`) Populate structural `spans`/`blocks`.
 
-Exit codes are stable and documented in `UMAFUserError.exitCode`.
+## Examples
 
-Example: generate a structural envelope for the crucible Markdown:
+**Single File:**
 
 ```bash
-swift build -c release
-./.build/release/umaf \
-  --input crucible/markdown-crucible-v2.md \
-  --json \
-  --dump-structure \
-  > crucible-structure.json
+# Output JSON to stdout
+umaf --input README.md --json > envelope.json
 ```
+
+**Batch Processing (Power User):**
+Process an entire folder of Markdown files in parallel, utilizing all CPU cores.
+
+```bash
+# Process all files in "data/" and write results to "dist/"
+umaf --input-dir ./data --output-dir ./dist --json
+```
+
+**Watch Mode (God Mode):**
+Instantly re-process files on save.
+
+```bash
+umaf --input-dir ./crucible --output-dir ./dist --watch
+```
+
+## Exit Codes
+
+Exit codes are stable and documented in `UMAFUserError.exitCode`.
