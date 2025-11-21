@@ -8,6 +8,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
 
+// PERFORMANCE RATCHET: Fail if batch takes longer than this (ms)
+const MAX_DURATION_MS = 2500;
+
 function findCli() {
   if (process.env.UMAF_CLI) {
     const p = process.env.UMAF_CLI;
@@ -32,21 +35,21 @@ async function main() {
   const crucibleDir = path.join(projectRoot, "crucible");
   const outDir = path.join(projectRoot, ".build", "envelopes");
 
-  // Clean output dir
   if (fs.existsSync(outDir)) {
     fs.rmSync(outDir, { recursive: true, force: true });
   }
   fs.mkdirSync(outDir, { recursive: true });
 
   console.log(`🚀 Batch processing: ${crucibleDir} -> ${outDir}`);
+  
+  const startTime = performance.now();
 
-  // OPTIMIZATION: Run CLI once in batch mode
   const child = spawn(cliPath, [
     "--input-dir", crucibleDir,
     "--output-dir", outDir,
-    "--json" // Default to envelope generation
+    "--json"
   ], {
-    stdio: "inherit" // Pipe logs directly to console
+    stdio: "inherit"
   });
 
   await new Promise((resolve, reject) => {
@@ -57,7 +60,13 @@ async function main() {
     child.on("error", reject);
   });
 
-  console.log("✅ Batch generation complete.");
+  const duration = performance.now() - startTime;
+  console.log(`✅ Batch generation complete in ${duration.toFixed(2)}ms`);
+
+  if (duration > MAX_DURATION_MS) {
+    console.error(`❌ PERFORMANCE REGRESSION: Batch took ${duration.toFixed(2)}ms (limit: ${MAX_DURATION_MS}ms)`);
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {
