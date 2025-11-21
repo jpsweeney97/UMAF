@@ -12,10 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # HOTFIX: Manually import Swift keys to bypass flaky keyservers
+      # ROBUST FIX: Download key to file first, then import
       - name: Import Swift GPG Keys
         run: |
-          curl -s https://swift.org/keys/all-keys.asc | gpg --import -
+          curl -fsSL https://swift.org/keys/all-keys.asc -o swift-keys.asc
+          gpg --import swift-keys.asc
+          rm swift-keys.asc
 
       # 1. Setup Swift
       - name: Select Swift
@@ -32,17 +34,20 @@ jobs:
         run: swift test --parallel
 
       # 4. Integration Test: Parallel Batch Mode
+      # This confirms the new --input-dir flag works on Linux
       - name: Test Parallel Batch Processing
         run: |
           mkdir -p dist
           ./.build/release/umaf --input-dir crucible --output-dir dist --json
           ls -la dist
+          # Verify at least one expected file exists
           if [ ! -f dist/markdown-crucible-v2.md.json ]; then
             echo "❌ Batch processing failed to generate output"
             exit 1
           fi
           echo "✅ Batch processing successful"
 
-      # 5. Smoke Test: Watch Mode
+      # 5. Smoke Test: Watch Mode (Help only)
+      # We can't run --watch because it blocks, but we verify the flag doesn't crash argument parsing
       - name: Verify Watch Flag Exists
         run: ./.build/release/umaf --help | grep "\-\-watch"
