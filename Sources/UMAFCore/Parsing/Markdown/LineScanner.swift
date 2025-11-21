@@ -359,9 +359,6 @@ public extension UMAFCoreEngine {
     }
     return w
   }
-}
-
-private extension UMAFCoreEngine {
 
   static func stripOuterQuotes(_ value: String) -> String {
     guard value.count >= 2 else { return value }

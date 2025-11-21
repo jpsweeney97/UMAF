@@ -9,8 +9,6 @@ import Foundation
 // A tiny namespace so this file never collides with app-local symbols.
 public enum UMAFCoreEngine {
 
-  // MARK: - Low-level helpers
-
   static func firstMarkdownHeadingTitle(in text: String) -> String? {
     for raw in text.components(separatedBy: "\n") {
       let trimmed = raw.trimmingCharacters(in: .whitespaces)
@@ -244,7 +242,7 @@ public enum UMAFCoreEngine {
         .count
 
       return Envelope(
-        version: "umaf-0.5.0",
+        version: UMAFVersion.string,
         docTitle: docTitle,
         docId: docId,
         createdAt: createdAt,

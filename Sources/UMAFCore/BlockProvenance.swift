@@ -35,11 +35,11 @@ enum BlockProvenanceV0_5 {
 
   static func prefix(for source: Source) -> String {
     switch source {
-    case .markdown: return "umaf:0.5.0:markdown"
-    case .pdfkit: return "umaf:0.5.0:adapter:pdfkit"
-    case .docx: return "umaf:0.5.0:adapter:docx"
-    case .plainText: return "umaf:0.5.0:plain-text"
-    case .ocr: return "umaf:0.5.0:adapter:ocr"
+    case .markdown: return "umaf:\(UMAFVersion.provenance):markdown"
+    case .pdfkit: return "umaf:\(UMAFVersion.provenance):adapter:pdfkit"
+    case .docx: return "umaf:\(UMAFVersion.provenance):adapter:docx"
+    case .plainText: return "umaf:\(UMAFVersion.provenance):plain-text"
+    case .ocr: return "umaf:\(UMAFVersion.provenance):adapter:ocr"
     }
   }
 
@@ -52,7 +52,7 @@ enum BlockProvenanceV0_5 {
 
     switch kind {
     case .root:
-      return ("umaf:0.5.0:root", 1.0)
+      return ("umaf:\(UMAFVersion.provenance):root", 1.0)
 
     case .section:
       return ("\(prefix):heading-atx", headingConfidence(for: source))
