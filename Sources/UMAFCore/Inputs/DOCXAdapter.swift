@@ -17,26 +17,39 @@ public enum DOCXAdapter {
   /// - .docx
   ///
   public static func extractPlainText(usingTextUtilFrom url: URL) throws -> String {
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/textutil")
-    process.arguments = ["-convert", "txt", "-stdout", url.path]
+    #if os(macOS)
+      let process = Process()
+      process.executableURL = URL(fileURLWithPath: "/usr/bin/textutil")
+      process.arguments = ["-convert", "txt", "-stdout", url.path]
 
-    let out = Pipe()
-    let err = Pipe()
-    process.standardOutput = out
-    process.standardError = err
+      let out = Pipe()
+      let err = Pipe()
+      process.standardOutput = out
+      process.standardError = err
 
-    try process.run()
-    process.waitUntilExit()
+      try process.run()
+      process.waitUntilExit()
 
-    guard process.terminationStatus == 0 else {
-      let msg = String(decoding: err.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+      guard process.terminationStatus == 0 else {
+        let msg = String(decoding: err.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        throw NSError(
+          domain: "UMAF", code: 2,
+          userInfo: [NSLocalizedDescriptionKey: "textutil failed: \(msg)"])
+      }
+
+      let data = out.fileHandleForReading.readDataToEndOfFile()
+      return String(decoding: data, as: UTF8.self)
+    #else
+      // Fallback for non-macOS platforms
+      // We throw a simple error here so the engine knows to skip or fail gracefully
       throw NSError(
-        domain: "UMAF", code: 2,
-        userInfo: [NSLocalizedDescriptionKey: "textutil failed: \(msg)"])
-    }
-
-    let data = out.fileHandleForReading.readDataToEndOfFile()
-    return String(decoding: data, as: UTF8.self)
+        domain: "UMAF",
+        code: 404,
+        userInfo: [
+          NSLocalizedDescriptionKey:
+            "DOCX/RTF extraction is only supported on macOS (requires textutil)."
+        ]
+      )
+    #endif
   }
 }
