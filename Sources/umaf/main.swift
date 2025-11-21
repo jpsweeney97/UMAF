@@ -3,8 +3,6 @@ import Foundation
 import Dispatch
 import UMAFCore
 
-// NOTE: 'os' module is Apple-only. Removed for Linux compatibility.
-
 @main
 struct UMAFCLI: ParsableCommand {
   static var configuration = CommandConfiguration(
@@ -65,12 +63,19 @@ struct UMAFCLI: ParsableCommand {
       }
       
       if watch {
+        // Watch mode logic is OS-specific (kqueue vs inotify)
+        // For this CLI, we only support the macOS implementation.
+        #if os(macOS)
         if #available(macOS 10.10, *) {
           try runWatchMode(inputDir: inDir, outputDir: outDir)
         } else {
-          print("Error: Watch mode requires a modern OS.")
+          print("Error: Watch mode requires a modern macOS.")
           throw ExitCode.failure
         }
+        #else
+        print("Error: Watch mode is currently only supported on macOS.")
+        throw ExitCode.failure
+        #endif
       } else {
         try runBatch(inputDir: inDir, outputDir: outDir)
       }
@@ -94,15 +99,10 @@ struct UMAFCLI: ParsableCommand {
   }
 
   func runWatchMode(inputDir: String, outputDir: String) throws {
+    #if os(macOS)
     print("👀 Watching \(inputDir) for changes...")
     try? runBatch(inputDir: inputDir, outputDir: outputDir, forceIncremental: true)
 
-    // DispatchSource is available on Linux but implementation details vary. 
-    // For strict Linux compat in Watch Mode, we rely on the #available check in run()
-    // which restricts this to macOS for now (Watch mode is typically a local dev feature).
-    // Compiling this block on Linux requires ensuring DispatchSource symbols exist.
-    // Fortunately, swift-corelibs-dispatch provides them on Linux.
-    
     let inUrl = URL(fileURLWithPath: inputDir)
     let fileDescriptor = open(inUrl.path, O_EVTONLY)
     
@@ -137,6 +137,7 @@ struct UMAFCLI: ParsableCommand {
     source.setCancelHandler { close(fileDescriptor) }
     source.resume()
     dispatchMain()
+    #endif
   }
 
   func runBatch(inputDir: String, outputDir: String, forceIncremental: Bool = false) throws {
@@ -188,7 +189,7 @@ struct UMAFCLI: ParsableCommand {
     print("→ Parallel processing \(filesToProcess.count) files...")
 
     let engine = UMAFEngine()
-    let state = BatchState() // Use our new NSLock-based class
+    let state = BatchState()
 
     DispatchQueue.concurrentPerform(iterations: filesToProcess.count) { index in
       let fileURL = filesToProcess[index]
