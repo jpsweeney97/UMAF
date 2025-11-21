@@ -11,11 +11,8 @@ public enum InputRouter {
 
   /// Normalized view of an input file.
   public struct RoutedInput {
-    /// Canonicalized text payload (line endings normalized, etc.)
     public let normalizedText: String
-    /// Original media type (e.g. application/pdf, text/html).
     public let mediaType: String
-    /// Semantic media type used for parsing (e.g. text/markdown).
     public let semanticMediaType: String
 
     public init(
@@ -30,11 +27,7 @@ public enum InputRouter {
   }
 
   /// Load and normalize an input file, returning text + media types.
-  ///
-  /// This mirrors UMAFCoreEngine.Transformer's ext-switch logic, but rolls it
-  /// into a reusable API so future callers (CLI/app/tests) can share it.
   public static func load(from url: URL, data: Data) throws -> RoutedInput {
-    // OPTIMIZATION: Data is passed in, avoiding a redundant read from disk.
     let ext = url.pathExtension.lowercased()
 
     switch ext {
@@ -60,7 +53,8 @@ public enum InputRouter {
 
     case "html", "htm":
       let raw = stringFromData(data)
-      let markdownish = HTMLAdapter.htmlToMarkdownish(raw)
+      // Fix: Add 'try' because SwiftSoup parsing can throw
+      let markdownish = try HTMLAdapter.htmlToMarkdownish(raw)
       return makeInput(text: markdownish, mediaType: "text/html", semanticType: "text/markdown")
 
     case "rtf", "doc", "docx":
@@ -99,7 +93,6 @@ public enum InputRouter {
     )
   }
 
-  /// Best-effort String decoding from Data (UTF-8 first, then raw).
   private static func stringFromData(_ data: Data) -> String {
     if let s = String(data: data, encoding: .utf8) {
       return s

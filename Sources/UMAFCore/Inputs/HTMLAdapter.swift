@@ -2,72 +2,84 @@
 //  HTMLAdapter.swift
 //  UMAFCore
 //
-//  Adapter for converting HTML into Markdown-ish text.
+//  Adapter for converting HTML into Markdown-ish text using SwiftSoup.
 //
-// Regex-based transforms. Later you can plug in SwiftSoup here without
-// touching callers.
 
 import Foundation
+import SwiftSoup
 
 public enum HTMLAdapter {
 
-  // OPTIMIZATION: Pre-compile regexes once.
-  private static let h1Regex = try! NSRegularExpression(
-    pattern: "<h1[^>]*>(.*?)</h1>",
-    options: [.dotMatchesLineSeparators, .caseInsensitive]
-  )
-
-  private static let h2Regex = try! NSRegularExpression(
-    pattern: "<h2[^>]*>(.*?)</h2>",
-    options: [.dotMatchesLineSeparators, .caseInsensitive]
-  )
-
-  private static let liRegex = try! NSRegularExpression(
-    pattern: "<li[^>]*>(.*?)</li>",
-    options: [.dotMatchesLineSeparators, .caseInsensitive]
-  )
-
-  private static let tagRegex = try! NSRegularExpression(
-    pattern: "<[^>]+>",
-    options: [.caseInsensitive]
-  )
-
   /// Convert an HTML document (as a String) to a Markdown-ish representation.
-  public static func htmlToMarkdownish(_ html: String) -> String {
-    var text = TextNormalization.normalizeLineEndings(html)
+  public static func htmlToMarkdownish(_ html: String) throws -> String {
+    let doc: Document = try SwiftSoup.parse(html)
+    guard let body = doc.body() else { return "" }
 
-    // Normalize <br> family
-    for br in ["<br>", "<br/>", "<br />", "<BR>", "<BR/>", "<BR />"] {
-      text = text.replacingOccurrences(of: br, with: "\n")
-    }
-
-    // Apply H1
-    let range1 = NSRange(text.startIndex..., in: text)
-    text = h1Regex.stringByReplacingMatches(
-      in: text, options: [], range: range1, withTemplate: "\n# $1\n\n"
-    )
-
-    // Apply H2
-    let range2 = NSRange(text.startIndex..., in: text)
-    text = h2Regex.stringByReplacingMatches(
-      in: text, options: [], range: range2, withTemplate: "\n## $1\n\n"
-    )
-
-    // Apply List Items
-    let range3 = NSRange(text.startIndex..., in: text)
-    text = liRegex.stringByReplacingMatches(
-      in: text, options: [], range: range3, withTemplate: "\n- $1\n"
-    )
-
-    // Strip remaining tags
-    let range4 = NSRange(text.startIndex..., in: text)
-    text = tagRegex.stringByReplacingMatches(
-      in: text, options: [], range: range4, withTemplate: ""
-    )
-
-    while text.contains("\n\n\n") {
-      text = text.replacingOccurrences(of: "\n\n\n", with: "\n\n")
-    }
+    let text = try traverse(node: body)
     return text.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  private static func traverse(node: Node) throws -> String {
+    var text = ""
+
+    for child in node.getChildNodes() {
+      if let textNode = child as? TextNode {
+        // Decode entities & preserve minimal whitespace logic if needed
+        // For now, we just take the text. SwiftSoup handles entity decoding.
+        text += textNode.text()
+      } else if let element = child as? Element {
+        let tagName = element.tagName().lowercased()
+        let content = try traverse(node: element)
+
+        switch tagName {
+        case "h1":
+          text += "\n# \(content.trimmingCharacters(in: .whitespacesAndNewlines))\n\n"
+        case "h2":
+          text += "\n## \(content.trimmingCharacters(in: .whitespacesAndNewlines))\n\n"
+        case "h3":
+          text += "\n### \(content.trimmingCharacters(in: .whitespacesAndNewlines))\n\n"
+        case "h4", "h5", "h6":
+          text += "\n#### \(content.trimmingCharacters(in: .whitespacesAndNewlines))\n\n"
+
+        case "p":
+          // Only add newlines if content isn't empty
+          let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+          if !trimmed.isEmpty {
+            text += "\n\(trimmed)\n\n"
+          }
+
+        case "br":
+          text += "\n"
+
+        case "li":
+          // Simple list handling.
+          // Note: This doesn't handle nested indentation perfectly yet,
+          // but is far better than regex.
+          let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+          text += "- \(trimmed)\n"
+
+        case "ul", "ol":
+          // Lists provide their own internal newlines via LI
+          text += "\n\(content)\n"
+
+        case "blockquote":
+          text += "\n> \(content.trimmingCharacters(in: .whitespacesAndNewlines))\n\n"
+
+        case "code", "pre":
+          // Basic code handling
+          text += "`\(content)`"
+
+        case "div", "section", "article", "main", "header", "footer":
+          // Block containers -> preserve content flow
+          text += "\n\(content)\n"
+
+        default:
+          // Inline tags (span, strong, em, a) or unknown tags -> flatten content
+          text += content
+        }
+      }
+    }
+
+    return text
   }
 }

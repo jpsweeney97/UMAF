@@ -29,6 +29,15 @@ let package = Package(
       url: "https://github.com/apple/swift-crypto.git",
       from: "3.0.0"
     ),
+    .package(
+      url: "https://github.com/swiftlang/swift-markdown.git",
+      from: "0.3.0"
+    ),
+    // NEW: SwiftSoup for robust HTML parsing
+    .package(
+      url: "https://github.com/scinfu/SwiftSoup.git",
+      from: "2.7.0"
+    ),
   ],
   targets: [
     .target(
@@ -36,6 +45,9 @@ let package = Package(
       dependencies: [
         .product(name: "SwiftToolsSupport-auto", package: "swift-tools-support-core"),
         .product(name: "Crypto", package: "swift-crypto"),
+        .product(name: "Markdown", package: "swift-markdown"),
+        // NEW: Link SwiftSoup
+        .product(name: "SwiftSoup", package: "SwiftSoup"),
       ]
     ),
     .executableTarget(
