@@ -33,11 +33,7 @@ final class UMAFCoreTests: XCTestCase {
   // MARK: - Basic engine tests
 
   func testMarkdownToEnvelopeHasRequiredFields() throws {
-    let tmpDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(
-      UUID().uuidString,
-      isDirectory: true
-    )
-    try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+    let tmpDir = try makeTempDir()
 
     let md = """
       # Test Doc
@@ -64,11 +60,7 @@ final class UMAFCoreTests: XCTestCase {
   }
 
   func testIdempotentNormalization() throws {
-    let tmpDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(
-      UUID().uuidString,
-      isDirectory: true
-    )
-    try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+    let tmpDir = try makeTempDir()
 
     let md = """
       # Title
@@ -157,11 +149,7 @@ final class UMAFCoreTests: XCTestCase {
     }
 
     // Write norm1 to a temp file
-    let tmpDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(
-      UUID().uuidString,
-      isDirectory: true
-    )
-    try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+    let tmpDir = try makeTempDir()
     let norm1URL = tmpDir.appendingPathComponent("crucible-normalized.md")
     try Data(norm1.utf8).write(to: norm1URL)
 

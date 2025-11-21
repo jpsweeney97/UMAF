@@ -2,13 +2,6 @@
 //  HTMLAdapter.swift
 //  UMAFCore
 //
-//  Created by JP Sweeney on 11/19/25.
-//
-
-//
-//  HTMLAdapter.swift
-//  UMAFCore
-//
 //  Adapter for converting HTML into Markdown-ish text.
 //
 // Regex-based transforms. Later you can plug in SwiftSoup here without

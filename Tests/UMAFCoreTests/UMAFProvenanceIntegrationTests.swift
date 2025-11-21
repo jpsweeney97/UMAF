@@ -4,15 +4,6 @@ import XCTest
 
 final class UMAFProvenanceIntegrationTests: XCTestCase {
 
-  private func makeTempFile(with contents: String, ext: String = "md") throws -> URL {
-    let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(
-      UUID().uuidString, isDirectory: true)
-    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-    let url = dir.appendingPathComponent("sample.\(ext)")
-    try contents.data(using: .utf8)!.write(to: url)
-    return url
-  }
-
   private func spanMap(for envelope: UMAFEnvelopeV0_5) -> [String: UMAFSpanV0_5] {
     Dictionary(uniqueKeysWithValues: envelope.spans.map { ($0.id, $0) })
   }
@@ -44,7 +35,7 @@ final class UMAFProvenanceIntegrationTests: XCTestCase {
       ```
       """
 
-    let url = try makeTempFile(with: md)
+    let url = try makeTempFile(contents: md)
     let envelope = try UMAFNormalization.envelopeV0_5(fromFileURL: url)
     let spans = spanMap(for: envelope)
 

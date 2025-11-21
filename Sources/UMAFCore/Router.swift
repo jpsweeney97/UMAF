@@ -2,16 +2,7 @@
 //  Router.swift
 //  UMAFCore
 //
-//  Created by JP Sweeney on 11/19/25.
-//
-
-//
-//  Router.swift
-//  UMAFCore
-//
-//  Input router for UMAF.
-//  Given a URL, this decides how to normalize the payload and what
-//  media types to attach, delegating to the appropriate adapters.
+//  Input router for UMAF. Normalizes input text and assigns media types.
 //
 
 import Foundation
@@ -48,19 +39,11 @@ public enum InputRouter {
 
     switch ext {
     case "md":
-      let mediaType = "text/markdown"
-      let semanticMediaType = "text/markdown"
       let raw = stringFromData(data)
       let normalized = TextNormalization.normalizeLineEndings(raw)
-      return RoutedInput(
-        normalizedText: normalized,
-        mediaType: mediaType,
-        semanticMediaType: semanticMediaType
-      )
+      return makeInput(text: normalized, mediaType: "text/markdown", semanticType: "text/markdown")
 
     case "json":
-      let mediaType = "application/json"
-      let semanticMediaType = "application/json"
       let raw = stringFromData(data)
       let normalizedText = TextNormalization.normalizeLineEndings(raw)
       let obj = try JSONSerialization.jsonObject(with: Data(normalizedText.utf8))
@@ -69,64 +52,52 @@ public enum InputRouter {
         options: [.sortedKeys, .prettyPrinted]
       )
       let canonicalText = stringFromData(canonical)
-      return RoutedInput(
-        normalizedText: canonicalText,
-        mediaType: mediaType,
-        semanticMediaType: semanticMediaType
+      return makeInput(
+        text: canonicalText,
+        mediaType: "application/json",
+        semanticType: "application/json"
       )
 
     case "html", "htm":
-      let mediaType = "text/html"
-      let semanticMediaType = "text/markdown"
       let raw = stringFromData(data)
       let markdownish = HTMLAdapter.htmlToMarkdownish(raw)
-      return RoutedInput(
-        normalizedText: markdownish,
-        mediaType: mediaType,
-        semanticMediaType: semanticMediaType
-      )
+      return makeInput(text: markdownish, mediaType: "text/html", semanticType: "text/markdown")
 
     case "rtf", "doc", "docx":
-      let mediaType: String
-      if ext == "rtf" {
-        mediaType = "application/rtf"
-      } else {
-        mediaType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      }
-      let semanticMediaType = "text/plain"
+      let mediaType =
+        (ext == "rtf")
+        ? "application/rtf"
+        : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       let extracted = try DOCXAdapter.extractPlainText(usingTextUtilFrom: url)
       let normalized = TextNormalization.normalizeLineEndings(extracted)
-      return RoutedInput(
-        normalizedText: normalized,
-        mediaType: mediaType,
-        semanticMediaType: semanticMediaType
-      )
+      return makeInput(text: normalized, mediaType: mediaType, semanticType: "text/plain")
 
     case "pdf":
-      let mediaType = "application/pdf"
-      let semanticMediaType = "text/markdown"
       let markdownish = try PDFKitAdapter.extractMarkdownish(from: url)
       let normalized = TextNormalization.normalizeLineEndings(markdownish)
-      return RoutedInput(
-        normalizedText: normalized,
-        mediaType: mediaType,
-        semanticMediaType: semanticMediaType
-      )
+      return makeInput(
+        text: normalized, mediaType: "application/pdf", semanticType: "text/markdown")
 
     default:
-      let mediaType = "text/plain"
-      let semanticMediaType = "text/plain"
       let raw = stringFromData(data)
       let normalized = TextNormalization.normalizeLineEndings(raw)
-      return RoutedInput(
-        normalizedText: normalized,
-        mediaType: mediaType,
-        semanticMediaType: semanticMediaType
-      )
+      return makeInput(text: normalized, mediaType: "text/plain", semanticType: "text/plain")
     }
   }
 
   // MARK: - Helpers
+
+  private static func makeInput(
+    text: String,
+    mediaType: String,
+    semanticType: String
+  ) -> RoutedInput {
+    RoutedInput(
+      normalizedText: text,
+      mediaType: mediaType,
+      semanticMediaType: semanticType
+    )
+  }
 
   /// Best-effort String decoding from Data (UTF-8 first, then raw).
   private static func stringFromData(_ data: Data) -> String {

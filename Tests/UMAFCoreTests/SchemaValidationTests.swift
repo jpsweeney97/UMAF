@@ -11,14 +11,6 @@ import XCTest
 
 final class SchemaValidationTests: XCTestCase {
 
-  /// Helper to create a temp directory for test artifacts.
-  private func makeTempDir() throws -> URL {
-    let tmpDir = URL(fileURLWithPath: NSTemporaryDirectory())
-      .appendingPathComponent(UUID().uuidString, isDirectory: true)
-    try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
-    return tmpDir
-  }
-
   /// Basic schema-ish check: envelopes produced from Markdown should contain
   /// all top-level keys that umaf_envelope_v0_5.json declares as required.
   func testMarkdownEnvelopeHasAllRequiredTopLevelFields() throws {

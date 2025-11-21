@@ -2,13 +2,6 @@
 //  DOCXAdapter.swift
 //  UMAFCore
 //
-//  Created by JP Sweeney on 11/19/25.
-//
-
-//
-//  DOCXAdapter.swift
-//  UMAFCore
-//
 //  Adapter for extracting plain text from DOC, DOCX, RTF using textutil.
 //
 
