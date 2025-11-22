@@ -2,7 +2,7 @@
 //  Envelope.swift
 //  UMAFCore
 //
-//  Strongly-typed UMAF envelope model (v0.5 schema).
+//  Strongly-typed UMAF envelope model (v0.6 schema; type names retained for compatibility).
 //
 
 import Foundation
@@ -90,7 +90,7 @@ public struct UMAFBlockV0_5: Codable, Hashable {
   }
 }
 
-/// UMAF envelope v0.5 – strongly-typed view of the JSON envelope.
+/// UMAF envelope v0.6 – strongly-typed view of the JSON envelope.
 ///
 /// It is intentionally compatible with the existing v0.4.1 JSON shape:
 /// - All previously-emitted fields keep their names and types.
@@ -201,7 +201,7 @@ public struct UMAFEnvelopeV0_5: Codable, Hashable {
   public let tables: [Table]
   public let codeBlocks: [CodeBlock]
 
-  // MARK: - v0.5 additions
+  // MARK: - v0.6 additions
 
   /// All known spans in the document. Optional for backwards compatibility.
   public var spans: [UMAFSpanV0_5]

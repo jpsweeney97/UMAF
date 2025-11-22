@@ -53,7 +53,7 @@ final class UMAFCoreTests: XCTestCase {
       return
     }
 
-    XCTAssertEqual(env.version, "umaf-0.5.0")
+    XCTAssertEqual(env.version, "umaf-0.6.0")
     XCTAssertEqual(env.mediaType, "text/markdown")
     XCTAssertFalse(env.normalized.isEmpty)
     XCTAssertGreaterThan(env.lineCount, 0)
@@ -113,6 +113,32 @@ final class UMAFCoreTests: XCTestCase {
     )
   }
 
+  func testStructureIsOptIn() throws {
+    let tmpDir = try makeTempDir()
+    let md = """
+      # Title
+
+      Body line
+      """
+    let inputURL = tmpDir.appendingPathComponent("structure.md")
+    try md.data(using: .utf8)!.write(to: inputURL)
+
+    let engine = UMAFEngine()
+
+    let defaultEnv = try engine.envelope(for: inputURL)
+    XCTAssertTrue(defaultEnv.spans.isEmpty)
+    XCTAssertTrue(defaultEnv.blocks.isEmpty)
+    XCTAssertNil(defaultEnv.featureFlags?["structure"])
+
+    let structured = try engine.envelope(
+      for: inputURL,
+      options: UMAFEngine.Options(includeStructure: true)
+    )
+    XCTAssertFalse(structured.spans.isEmpty)
+    XCTAssertFalse(structured.blocks.isEmpty)
+    XCTAssertNil(structured.featureFlags?["structure"])
+  }
+
   // MARK: - Crucible tests
 
   /// Full crucible -> envelope should succeed and satisfy basic invariants.
@@ -126,7 +152,7 @@ final class UMAFCoreTests: XCTestCase {
     }
 
     let env = UMAFWalkerV0_5.ensureRootSpanAndBlock(UMAFWalkerV0_5.build(from: coreEnv))
-    XCTAssertEqual(env.version, "umaf-0.5.0")
+    XCTAssertEqual(env.version, "umaf-0.6.0")
     XCTAssertGreaterThan(env.lineCount, 0)
     XCTAssertFalse(env.normalized.isEmpty)
   }
@@ -169,5 +195,12 @@ final class UMAFCoreTests: XCTestCase {
       norm2,
       "Crucible normalization should be idempotent once normalized."
     )
+  }
+
+  func testCacheHashIsFilenameSafe() {
+    let hash = IncrementalCache.safeHash(for: "/tmp/with spaces/and/slashes")
+    XCTAssertEqual(hash.count, 64)  // 32-byte SHA256 rendered as hex
+    XCTAssertFalse(hash.contains("/"))
+    XCTAssertFalse(hash.contains("="))
   }
 }

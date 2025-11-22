@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Crypto
 
 public actor IncrementalCache {
 
@@ -29,9 +30,7 @@ public actor IncrementalCache {
   public init(inputDir: URL) {
     // Hash the input path to create a unique cache file for this specific directory.
     // This allows caching multiple projects without collision.
-    let inputPathHash =
-      inputDir.path.data(using: .utf8)?.base64EncodedString()
-      ?? inputDir.lastPathComponent
+    let inputPathHash = IncrementalCache.safeHash(for: inputDir.path)
     let cacheFilename = "umaf-cache-\(inputPathHash).json"
 
     // Try to use the system user cache directory
@@ -87,6 +86,11 @@ public actor IncrementalCache {
       return CacheIndex(version: IncrementalCache.cacheVersion, entries: [:])
     }
     return decoded
+  }
+
+  static func safeHash(for path: String) -> String {
+    let digest = SHA256.hash(data: Data(path.utf8))
+    return digest.map { String(format: "%02x", $0) }.joined()
   }
 
   public func save() {

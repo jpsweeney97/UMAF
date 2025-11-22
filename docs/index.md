@@ -4,7 +4,7 @@ UMAF turns plain text, Markdown, JSON, and a few other formats into a compact
 **envelope** that's easy to consume, diff, and validate.
 
 - **CLI:** `umaf`
-- **Schema:** `spec/umaf-envelope-v0.5.0.json`
+- **Schema:** `spec/umaf-envelope-v0.6.0.json`
 
 ## Quick start
 

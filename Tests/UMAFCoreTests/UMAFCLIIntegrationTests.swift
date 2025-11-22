@@ -35,7 +35,7 @@ final class UMAFCLIIntegrationTests: XCTestCase {
     validate.arguments = [
       "node",
       "scripts/validate2020.mjs",
-      "--schema", "spec/umaf-envelope-v0.5.0.json",
+      "--schema", "spec/umaf-envelope-v0.6.0.json",
       "--data", envelopeURL.path,
       "--strict",
     ]

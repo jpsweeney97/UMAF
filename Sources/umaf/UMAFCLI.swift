@@ -99,46 +99,50 @@ struct UMAFCLI: AsyncParsableCommand {
       print("👀 Watching \(inputDir) for changes...")
       try? await runBatch(inputDir: inputDir, outputDir: outputDir, forceIncremental: true)
 
-      // Keep the process alive indefinitely for watching
-      try await withCheckedThrowingContinuation {
-        (continuation: CheckedContinuation<Void, Error>) in
-        let inUrl = URL(fileURLWithPath: inputDir)
-        let fileDescriptor = open(inUrl.path, O_EVTONLY)
+      let inUrl = URL(fileURLWithPath: inputDir)
+      let fileDescriptor = open(inUrl.path, O_EVTONLY)
 
-        guard fileDescriptor >= 0 else {
-          print("❌ Failed to open directory for watching.")
-          continuation.resume(throwing: ExitCode.failure)
-          return
-        }
+      guard fileDescriptor >= 0 else {
+        print("❌ Failed to open directory for watching.")
+        throw ExitCode.failure
+      }
 
-        let source = DispatchSource.makeFileSystemObjectSource(
-          fileDescriptor: fileDescriptor,
-          eventMask: .write,
-          queue: DispatchQueue.global()
-        )
+      let source = DispatchSource.makeFileSystemObjectSource(
+        fileDescriptor: fileDescriptor,
+        eventMask: .write,
+        queue: DispatchQueue.global()
+      )
 
-        var timer: DispatchSourceTimer?
+      var timer: DispatchSourceTimer?
 
-        source.setEventHandler {
-          timer?.cancel()
-          timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global())
-          timer?.schedule(deadline: .now() + 0.2)
-          timer?.setEventHandler {
-            print("\n🔄 Change detected. Re-processing...")
-            Task {
-              do {
-                try await self.runBatch(
-                  inputDir: inputDir, outputDir: outputDir, forceIncremental: true)
-              } catch {
-                print("Error during re-process: \(error)")
-              }
+      source.setEventHandler {
+        timer?.cancel()
+        timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global())
+        timer?.schedule(deadline: .now() + 0.2)
+        timer?.setEventHandler {
+          print("\n🔄 Change detected. Re-processing...")
+          Task {
+            do {
+              try await self.runBatch(
+                inputDir: inputDir, outputDir: outputDir, forceIncremental: true)
+            } catch {
+              print("Error during re-process: \(error)")
             }
           }
-          timer?.resume()
         }
+        timer?.resume()
+      }
 
-        source.setCancelHandler { close(fileDescriptor) }
-        source.resume()
+      source.setCancelHandler { close(fileDescriptor) }
+      source.resume()
+
+      defer {
+        timer?.cancel()
+        source.cancel()
+      }
+
+      while !Task.isCancelled {
+        try await Task.sleep(nanoseconds: 1_000_000_000)
       }
     #endif
   }
@@ -183,41 +187,54 @@ struct UMAFCLI: AsyncParsableCommand {
 
     let engine = UMAFEngine()
     let state = BatchState()
+    let maxConcurrent = max(2, ProcessInfo.processInfo.activeProcessorCount)
 
     // Capture immutable list for the task group
     let inputs = filesToProcess
 
     await withTaskGroup(of: Void.self) { group in
-      for fileURL in inputs {
-        group.addTask {
-          let filename = fileURL.lastPathComponent
-          let relativePath = fileURL.path.replacingOccurrences(of: inUrl.path + "/", with: "")
+      var iterator = inputs.makeIterator()
+      var active = 0
 
-          let outFilename: String
-          if self.json {
-            outFilename = filename + ".json"
-          } else if self.normalized {
-            outFilename = filename + ".md"
-          } else {
-            outFilename = filename + ".json"
-          }
+      func enqueueAvailable() {
+        while active < maxConcurrent, let fileURL = iterator.next() {
+          active += 1
+          group.addTask {
+            let filename = fileURL.lastPathComponent
+            let relativePath = fileURL.path.replacingOccurrences(of: inUrl.path + "/", with: "")
 
-          let destination = outUrl.appendingPathComponent(outFilename)
+            let outFilename: String
+            if self.json {
+              outFilename = filename + ".json"
+            } else if self.normalized {
+              outFilename = filename + ".md"
+            } else {
+              outFilename = filename + ".json"
+            }
 
-          do {
-            let data = try Data(contentsOf: fileURL)
-            let outputData = try self.processDataToMemory(
-              data: data, sourceURL: fileURL, engine: engine)
+            let destination = outUrl.appendingPathComponent(outFilename)
 
-            try self.atomicWrite(data: outputData, to: destination)
+            do {
+              let data = try Data(contentsOf: fileURL)
+              let outputData = try self.processDataToMemory(
+                data: data, sourceURL: fileURL, engine: engine)
 
-            await cache?.didProcess(fileURL: fileURL, relativePath: relativePath)
-            await state.addSuccess()
-          } catch {
-            await state.addError()
-            print("❌ Failed to process \(filename): \(error)")
+              try self.atomicWrite(data: outputData, to: destination)
+
+              await cache?.didProcess(fileURL: fileURL, relativePath: relativePath)
+              await state.addSuccess()
+            } catch {
+              await state.addError()
+              print("❌ Failed to process \(filename): \(error)")
+            }
           }
         }
+      }
+
+      enqueueAvailable()
+      while await group.next() != nil {
+        active -= 1
+        enqueueAvailable()
       }
     }
 
@@ -277,13 +294,13 @@ struct UMAFCLI: AsyncParsableCommand {
     }
 
     if json {
-      var env = try engine.envelope(for: sourceURL)
-      if dumpStructure {
-        env = UMAFNormalization.withRootSpanAndBlock(env)
-        var flags = env.featureFlags ?? [:]
-        flags["structure"] = true
-        env.featureFlags = flags
-      }
+      let env = try engine.envelope(
+        for: sourceURL,
+        options: UMAFEngine.Options(
+          includeStructure: dumpStructure,
+          setStructureFeatureFlag: dumpStructure
+        )
+      )
       let enc = JSONEncoder()
       enc.outputFormatting = [.prettyPrinted, .sortedKeys]
       var out = try enc.encode(env)

@@ -9,6 +9,7 @@ final class UMAFProvenanceIntegrationTests: XCTestCase {
   }
 
   func testMarkdownProvenanceAndConfidence() throws {
+    let p = UMAFVersion.provenance
     let md = """
       ---
       title: Demo
@@ -43,39 +44,39 @@ final class UMAFProvenanceIntegrationTests: XCTestCase {
     let headingBlocks = envelope.blocks.filter { $0.kind == .section }
     XCTAssertFalse(headingBlocks.isEmpty)
     for block in headingBlocks {
-      XCTAssertEqual(block.provenance, "umaf:0.5.0:markdown:heading-atx")
+      XCTAssertEqual(block.provenance, "umaf:\(p):markdown:heading-atx")
       XCTAssertEqual(block.confidence, 1.0)
     }
 
     // Bullets
     let bulletBlocks = envelope.blocks.filter { $0.kind == .bullet }
     XCTAssertEqual(bulletBlocks.count, 1)
-    XCTAssertEqual(bulletBlocks.first?.provenance, "umaf:0.5.0:markdown:bullet")
+    XCTAssertEqual(bulletBlocks.first?.provenance, "umaf:\(p):markdown:bullet")
     XCTAssertEqual(bulletBlocks.first?.confidence, 1.0)
 
     // Paragraphs
     let paragraphBlocks = envelope.blocks.filter { $0.kind == .paragraph }
     XCTAssertFalse(paragraphBlocks.isEmpty)
-    XCTAssertEqual(paragraphBlocks.first?.provenance, "umaf:0.5.0:markdown:paragraph")
+    XCTAssertEqual(paragraphBlocks.first?.provenance, "umaf:\(p):markdown:paragraph")
     XCTAssertEqual(paragraphBlocks.first?.confidence, 0.9)
 
     // Table
     let tableBlocks = envelope.blocks.filter { $0.kind == .table }
     XCTAssertEqual(tableBlocks.count, 1)
     let table = try XCTUnwrap(tableBlocks.first)
-    XCTAssertEqual(table.provenance, "umaf:0.5.0:markdown:table:pipe")
+    XCTAssertEqual(table.provenance, "umaf:\(p):markdown:table:pipe")
     XCTAssertEqual(table.confidence, 1.0)
 
     // Code
     let codeBlocks = envelope.blocks.filter { $0.kind == .code }
     XCTAssertEqual(codeBlocks.count, 1)
-    XCTAssertEqual(codeBlocks.first?.provenance, "umaf:0.5.0:markdown:code:fenced-backtick")
+    XCTAssertEqual(codeBlocks.first?.provenance, "umaf:\(p):markdown:code:fenced-backtick")
     XCTAssertEqual(codeBlocks.first?.confidence, 1.0)
 
     // Front matter
     let frontBlocks = envelope.blocks.filter { $0.kind == .frontMatter }
     XCTAssertEqual(frontBlocks.count, 1)
-    XCTAssertEqual(frontBlocks.first?.provenance, "umaf:0.5.0:markdown:front-matter:yaml")
+    XCTAssertEqual(frontBlocks.first?.provenance, "umaf:\(p):markdown:front-matter:yaml")
     XCTAssertEqual(frontBlocks.first?.confidence, 1.0)
 
     // All blocks still have valid spans.

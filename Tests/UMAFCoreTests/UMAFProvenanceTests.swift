@@ -5,31 +5,32 @@ import XCTest
 final class UMAFProvenanceTests: XCTestCase {
 
   func testPrefixSelectionCoversAdaptersAndPlain() {
+    let p = UMAFVersion.provenance
     XCTAssertEqual(
       BlockProvenanceV0_5.prefix(for: .markdown),
-      "umaf:0.5.0:markdown"
+      "umaf:\(p):markdown"
     )
     XCTAssertEqual(
       BlockProvenanceV0_5.prefix(for: .pdfkit),
-      "umaf:0.5.0:adapter:pdfkit"
+      "umaf:\(p):adapter:pdfkit"
     )
     XCTAssertEqual(
       BlockProvenanceV0_5.prefix(for: .docx),
-      "umaf:0.5.0:adapter:docx"
+      "umaf:\(p):adapter:docx"
     )
     XCTAssertEqual(
       BlockProvenanceV0_5.prefix(for: .plainText),
-      "umaf:0.5.0:plain-text"
+      "umaf:\(p):plain-text"
     )
     XCTAssertEqual(
       BlockProvenanceV0_5.prefix(for: .ocr),
-      "umaf:0.5.0:adapter:ocr"
+      "umaf:\(p):adapter:ocr"
     )
 
-    // html falls under markdown prefix for v0.5.0
+    // html falls under markdown prefix for v0.6.0
     XCTAssertEqual(
       BlockProvenanceV0_5.prefix(for: BlockProvenanceV0_5.source(for: "text/html")),
-      "umaf:0.5.0:markdown"
+      "umaf:\(p):markdown"
     )
   }
 
@@ -40,7 +41,7 @@ final class UMAFProvenanceTests: XCTestCase {
       tableInfo: BlockProvenanceV0_5.TableInfo(headerCount: 2, rowCounts: [2, 2])
     )
     XCTAssertEqual(tidy.confidence, 1.0)
-    XCTAssertEqual(tidy.provenance, "umaf:0.5.0:markdown:table:pipe")
+    XCTAssertEqual(tidy.provenance, "umaf:\(UMAFVersion.provenance):markdown:table:pipe")
 
     let ragged = BlockProvenanceV0_5.provenanceAndConfidence(
       for: .table,

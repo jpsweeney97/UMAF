@@ -85,10 +85,8 @@ enum UMAFWalkerV0_5 {
   }
 
   static func build(
-    from coreEnvelope: UMAFCoreEngine.Envelope,
-    routedInput: InputRouter.RoutedInput? = nil
+    from coreEnvelope: UMAFCoreEngine.Envelope
   ) -> UMAFEnvelopeV0_5 {
-    _ = routedInput
     let source = BlockProvenanceV0_5.source(for: coreEnvelope.mediaType)
     let normalizedLines = coreEnvelope.normalized.split(
       separator: "\n", omittingEmptySubsequences: false
@@ -112,7 +110,7 @@ enum UMAFWalkerV0_5 {
       level: 1,
       heading: coreEnvelope.docTitle,
       metadata: ["mediaType": coreEnvelope.mediaType],
-      provenance: "umaf:0.5.0:root",
+      provenance: "umaf:\(UMAFVersion.provenance):root",
       confidence: 1.0
     )
     blocks.append(rootBlock)
@@ -344,7 +342,7 @@ enum UMAFWalkerV0_5 {
         UMAFBlockV0_5(
           id: rootBlockId, kind: .root, spanId: rootSpanId, parentId: nil, level: 1,
           heading: env.docTitle, metadata: ["mediaType": env.mediaType],
-          provenance: "umaf:0.5.0:root", confidence: 1.0), at: 0)
+          provenance: "umaf:\(UMAFVersion.provenance):root", confidence: 1.0), at: 0)
     }
     return env
   }

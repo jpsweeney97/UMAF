@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-- (none)
+- Harmonized envelope/schema to **0.6.0** across code, docs, and tests; provenance strings now derive from `UMAFVersion`.
+- Structural spans/blocks are now opt-in: `--dump-structure` (or `UMAFEngine.Options.includeStructure`) controls emission and feature flagging.
+- Batch robustness: cache filenames use SHA256 hex (path-safe), task-group concurrency is bounded by CPU count, and watch mode no longer hangs.
+- Envelope title prefers front-matter `title` over heading/filename; walker cleaned up hardcoded root provenance/unused args.
 
 ## 0.5.1 — 2025-11-21
 

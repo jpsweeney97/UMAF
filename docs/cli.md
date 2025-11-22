@@ -12,7 +12,7 @@ umaf --help
 - `--watch`: Watch input directory for changes and re-process instantly.
 - `--json`: Output UMAF envelope JSON (default).
 - `--normalized`: Output canonical normalized text (Markdown where possible).
-- `--dump-structure`: (with `--json`) Populate structural `spans`/`blocks`.
+- `--dump-structure`: (with `--json`) Populate structural `spans`/`blocks` (omitted otherwise).
 
 ## Examples
 

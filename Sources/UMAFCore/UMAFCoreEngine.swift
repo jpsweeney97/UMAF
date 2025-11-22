@@ -1,6 +1,6 @@
 //
 //  UMAFCoreEngine.swift
-//  Core formatting & semantic engine for UMAF (v0.5)
+//  Core formatting & semantic engine for UMAF (v0.6)
 //
 
 import Crypto
@@ -114,10 +114,17 @@ public enum UMAFCoreEngine {
       data: Data
     ) -> Envelope {
       let baseName = url.deletingPathExtension().lastPathComponent
-      let docTitle: String =
+      let frontMatterTitle = frontMatter.first { $0.key.lowercased() == "title" }?.value
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+      let headingTitle =
         (semanticMediaType == "text/markdown")
-        ? (UMAFCoreEngine.firstMarkdownHeadingTitle(in: normalizedPayload) ?? baseName)
-        : baseName
+        ? UMAFCoreEngine.firstMarkdownHeadingTitle(in: normalizedPayload)
+        : nil
+
+      let docTitle: String =
+        (frontMatterTitle?.isEmpty == false ? frontMatterTitle : nil)
+        ?? headingTitle
+        ?? baseName
       let createdAt = ISO8601DateFormatter().string(
         from: (try? FileManager.default.attributesOfItem(atPath: url.path)[.creationDate] as? Date)
           ?? Date()
