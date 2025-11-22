@@ -2,10 +2,15 @@
 
 ## Unreleased
 
-- Harmonized envelope/schema to **0.6.0** across code, docs, and tests; provenance strings now derive from `UMAFVersion`.
-- Structural spans/blocks are now opt-in: `--dump-structure` (or `UMAFEngine.Options.includeStructure`) controls emission and feature flagging.
-- Batch robustness: cache filenames use SHA256 hex (path-safe), task-group concurrency is bounded by CPU count, and watch mode no longer hangs.
-- Envelope title prefers front-matter `title` over heading/filename; walker cleaned up hardcoded root provenance/unused args.
+- (none)
+
+## 0.7.0 — 2025-11-21
+
+- **Breaking:** Schema bumped to `umaf-envelope-v0.7.0`; spans, blocks, and featureFlags are required and every block must carry provenance + confidence.
+- **Rich envelopes by default:** Engine always performs structural analysis and sets `featureFlags.structure == true`; CLI no longer offers a slim/structure toggle.
+- **Model updates:** Introduced `UMAFEnvelopeV0_7`/span/block types with non-optional provenance/confidence; walker/engine logic emits full structure.
+- **Provenance:** Rule paths now use the 0.7.0 prefix with default confidence 1.0 for unambiguous syntax; paragraph/ragged cases retain lower scores.
+- **Schema/docs:** Added `spec/umaf-envelope-v0.7.0.json`, updated docs/README/validation scripts to reference v0.7.0.
 
 ## 0.5.1 — 2025-11-21
 

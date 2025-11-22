@@ -4,7 +4,7 @@ import XCTest
 
 final class UMAFProvenanceIntegrationTests: XCTestCase {
 
-  private func spanMap(for envelope: UMAFEnvelopeV0_5) -> [String: UMAFSpanV0_5] {
+  private func spanMap(for envelope: UMAFEnvelopeV0_7) -> [String: UMAFSpanV0_7] {
     Dictionary(uniqueKeysWithValues: envelope.spans.map { ($0.id, $0) })
   }
 
@@ -37,14 +37,14 @@ final class UMAFProvenanceIntegrationTests: XCTestCase {
       """
 
     let url = try makeTempFile(contents: md)
-    let envelope = try UMAFNormalization.envelopeV0_5(fromFileURL: url)
+    let envelope = try UMAFNormalization.envelopeV0_7(fromFileURL: url)
     let spans = spanMap(for: envelope)
 
     // Headings
     let headingBlocks = envelope.blocks.filter { $0.kind == .section }
     XCTAssertFalse(headingBlocks.isEmpty)
     for block in headingBlocks {
-      XCTAssertEqual(block.provenance, "umaf:\(p):markdown:heading-atx")
+      XCTAssertEqual(block.provenance, "umaf:\(p):markdown:heading")
       XCTAssertEqual(block.confidence, 1.0)
     }
 
@@ -58,7 +58,7 @@ final class UMAFProvenanceIntegrationTests: XCTestCase {
     let paragraphBlocks = envelope.blocks.filter { $0.kind == .paragraph }
     XCTAssertFalse(paragraphBlocks.isEmpty)
     XCTAssertEqual(paragraphBlocks.first?.provenance, "umaf:\(p):markdown:paragraph")
-    XCTAssertEqual(paragraphBlocks.first?.confidence, 0.9)
+    XCTAssertEqual(paragraphBlocks.first?.confidence, 0.95)
 
     // Table
     let tableBlocks = envelope.blocks.filter { $0.kind == .table }

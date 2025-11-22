@@ -1,6 +1,6 @@
 # Envelope
 
-The canonical JSON Schema for UMAF lives at `spec/umaf-envelope-v0.6.0.json`.
+The canonical JSON Schema for UMAF lives at `spec/umaf-envelope-v0.7.0.json`.
 This document is a human-friendly overview; the schema is the source of truth.
 
 ## Core fields
@@ -10,7 +10,7 @@ envelope:
 
 | field        | type    | notes                                                  |
 | ------------ | ------- | ------------------------------------------------------ |
-| `version`    | string  | `"umaf-0.6.0"`                                         |
+| `version`    | string  | `"umaf-0.7.0"`                                         |
 | `docTitle`   | string  | derived from first heading or filename                 |
 | `docId`      | string  | stable identifier derived from `sourcePath` + content  |
 | `createdAt`  | string  | RFC 3339 timestamp (UTC)                               |
@@ -27,20 +27,18 @@ are optional but, when present, are constrained by the JSON Schema.
 
 ## Structural fields: spans and blocks
 
-UMAF v0.6.0 can emit a lightweight structural view of the normalized document
-via the `spans` and `blocks` arrays. These fields are optional but, when
-present, follow these conventions:
+UMAF v0.7.0 always emits a lightweight structural view of the normalized document
+via the `spans` and `blocks` arrays. These fields are mandatory and follow
+these conventions:
 
-- The CLI only populates these arrays when invoked with `--json --dump-structure`.
-
-- `spans` is an array of `span` objects (`UMAFSpanV0_5` in Swift):
+- `spans` is an array of `span` objects (`UMAFSpanV0_7` in Swift):
 
   - `id`: stable string identifier for the span (e.g. `span:root`,
     `span:sec:001`).
   - `startLine`, `endLine`: 1-based line numbers into `normalized`.
   - `startColumn`, `endColumn` (optional): 0-based column offsets.
 
-- `blocks` is an array of `block` objects (`UMAFBlockV0_5` in Swift):
+- `blocks` is an array of `block` objects (`UMAFBlockV0_7` in Swift):
 
   - `id`: stable identifier for the block (e.g. `block:root`,
     `block:sec:001`).
@@ -53,7 +51,7 @@ present, follow these conventions:
   - `heading`, `language`, `tableHeader`, `tableRows`, `metadata`:
     optional fields that surface extra structure for certain block kinds.
 
-For UMAF v0.6.0, the following invariants are enforced by the implementation
+For UMAF v0.7.0, the following invariants are enforced by the implementation
 and tests:
 
 - There is always a `span:root` covering `[1 ... lineCount]` when structural
@@ -74,28 +72,26 @@ UMAF uses a simple provenance and confidence taxonomy for blocks:
 - `provenance` is a string that describes how the block was derived, for
   example:
 
-  - `umaf:0.6.0:markdown:heading-atx`
-  - `umaf:0.6.0:markdown:bullet`
-  - `umaf:0.6.0:markdown:paragraph`
-  - `umaf:0.6.0:markdown:table:pipe`
-  - `umaf:0.6.0:markdown:code:fenced-backtick`
-  - `umaf:0.6.0:markdown:front-matter:yaml`
+  - `umaf:0.7.0:markdown:heading`
+  - `umaf:0.7.0:markdown:bullet`
+  - `umaf:0.7.0:markdown:paragraph`
+  - `umaf:0.7.0:markdown:table:pipe`
+  - `umaf:0.7.0:markdown:code:fenced-backtick`
+  - `umaf:0.7.0:markdown:front-matter:yaml`
 
-  These strings are computed by `BlockProvenanceV0_5` and are stable within
-  the 0.6.0 schema.
+  These strings are computed by `BlockProvenanceV0_7` and are stable within
+  the 0.7.0 schema.
 
 - `confidence` is a float in `[0.0, 1.0]` that reflects how confident UMAF is
-  about the semantic classification of the block. For v0.6.0, headings,
-  bullets, front matter, tidy tables, and fenced code from Markdown inputs are
-  typically assigned `1.0`, while ragged tables and raw content use slightly
-  lower values.
+  about the semantic classification of the block. For v0.7.0, unambiguous
+  syntax (headings, bullets, fenced code, tidy tables, front matter) defaults
+  to `1.0`, while ragged tables and raw content use slightly lower values.
 
-At the envelope level, `featureFlags` is an optional object mapping string keys
-to booleans. For v0.6.0 the only defined flag is:
+At the envelope level, `featureFlags` is an object mapping string keys to
+booleans. For v0.7.0 the only defined flag is:
 
-- `featureFlags.structure == true` when the CLI was invoked with
-  `--json --dump-structure` and structural data (`spans` and `blocks`) has
-  been populated.
+- `featureFlags.structure == true` on all envelopes (structural data is
+  mandatory in v0.7.0).
 
 ## Validation
 
@@ -103,5 +99,5 @@ To validate envelopes against the JSON Schema:
 
 ```bash
 npm ci
-node scripts/validate2020.mjs   --schema spec/umaf-envelope-v0.6.0.json   --data ".build/envelopes/*.json"   --strict
+node scripts/validate2020.mjs   --schema spec/umaf-envelope-v0.7.0.json   --data ".build/envelopes/*.json"   --strict
 ```

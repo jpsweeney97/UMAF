@@ -1,14 +1,14 @@
 import Foundation
 
-/// Stable provenance + confidence taxonomy for UMAF v0.6.0 blocks.
+/// Stable provenance + confidence taxonomy for UMAF v0.7.0 blocks.
 ///
 /// Notes:
-/// - `umaf:0.6.0:markdown` covers native `text/markdown` **and** the
+/// - `umaf:0.7.0:markdown` covers native `text/markdown` **and** the
 ///   HTML→markdownish transforms already applied in normalization.
-/// - Setext vs ATX headings are not distinguished in v0.6.0; all detected
+/// - Setext vs ATX headings are not distinguished in v0.7.0; all detected
 ///   headings map to `heading-atx`. A future schema/version could split these
 ///   once the parser surfaces that detail.
-enum BlockProvenanceV0_5 {
+enum BlockProvenanceV0_7 {
 
   enum Source {
     case markdown
@@ -29,7 +29,7 @@ enum BlockProvenanceV0_5 {
     if lower.contains("openxmlformats") || lower == "application/rtf" { return .docx }
     if lower == "text/plain" { return .plainText }
     if lower.contains("ocr") { return .ocr }
-    // text/markdown and html→markdownish share the markdown prefix for v0.6.0.
+    // text/markdown and html→markdownish share the markdown prefix for v0.7.0.
     return .markdown
   }
 
@@ -44,7 +44,7 @@ enum BlockProvenanceV0_5 {
   }
 
   static func provenanceAndConfidence(
-    for kind: UMAFBlockKindV0_5,
+    for kind: UMAFBlockKindV0_7,
     source: Source,
     tableInfo: TableInfo? = nil
   ) -> (provenance: String, confidence: Double) {
@@ -55,7 +55,7 @@ enum BlockProvenanceV0_5 {
       return ("umaf:\(UMAFVersion.provenance):root", 1.0)
 
     case .section:
-      return ("\(prefix):heading-atx", headingConfidence(for: source))
+      return ("\(prefix):heading", headingConfidence(for: source))
 
     case .bullet:
       return ("\(prefix):bullet", bulletConfidence(for: source))
@@ -81,30 +81,30 @@ enum BlockProvenanceV0_5 {
   private static func headingConfidence(for source: Source) -> Double {
     switch source {
     case .markdown: return 1.0
-    case .docx: return 0.8
-    case .pdfkit: return 0.8
-    case .plainText: return 0.8
-    case .ocr: return 0.8
+    case .docx: return 1.0
+    case .pdfkit: return 1.0
+    case .plainText: return 1.0
+    case .ocr: return 1.0
     }
   }
 
   private static func bulletConfidence(for source: Source) -> Double {
     switch source {
     case .markdown: return 1.0
-    case .docx: return 0.7
-    case .pdfkit: return 0.7
-    case .plainText: return 0.7
-    case .ocr: return 0.7
+    case .docx: return 1.0
+    case .pdfkit: return 1.0
+    case .plainText: return 1.0
+    case .ocr: return 1.0
     }
   }
 
   private static func paragraphConfidence(for source: Source) -> Double {
     switch source {
-    case .markdown: return 0.9
-    case .docx: return 0.8
-    case .pdfkit: return 0.8
-    case .plainText: return 0.8
-    case .ocr: return 0.8
+    case .markdown: return 0.95
+    case .docx: return 0.9
+    case .pdfkit: return 0.9
+    case .plainText: return 0.9
+    case .ocr: return 0.85
     }
   }
 

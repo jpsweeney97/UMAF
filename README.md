@@ -4,7 +4,7 @@ UMAF (Universal Machine‑readable Archive Format) is a tiny, fast transformer t
 **plain text**, **Markdown**, **JSON**, and common formats (HTML, PDF, DOCX via adapters)
 and emits a consistent, machine‑friendly **UMAF envelope**.
 
-> Current envelope schema: `umaf-envelope-0.6.0`
+> Current envelope schema: `umaf-envelope-0.7.0`
 
 ---
 
@@ -46,6 +46,7 @@ Live-update output files as you edit source content:
 - **Fast**: Parallel batch processing (sub-millisecond overhead per file).
 - **Live**: Watch mode for instant feedback loops.
 - **Typed**: JSON Schema validation for all outputs.
+- **Structured**: Spans/blocks are always emitted for richer downstream processing.
 
 ## Project layout
 

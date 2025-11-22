@@ -12,7 +12,7 @@ import XCTest
 final class SchemaValidationTests: XCTestCase {
 
   /// Basic schema-ish check: envelopes produced from Markdown should contain
-  /// all top-level keys that umaf_envelope_v0_5.json declares as required.
+  /// all top-level keys that umaf_envelope_v0_7.json declares as required.
   func testMarkdownEnvelopeHasAllRequiredTopLevelFields() throws {
     let tmpDir = try makeTempDir()
     let md = """
@@ -26,12 +26,7 @@ final class SchemaValidationTests: XCTestCase {
     let inputURL = tmpDir.appendingPathComponent("schema-test.md")
     try md.data(using: .utf8)!.write(to: inputURL)
 
-    let transformer = UMAFCoreEngine.Transformer()
-    let result = try transformer.transformFile(inputURL: inputURL, outputFormat: .jsonEnvelope)
-    guard case .envelope(let env) = result else {
-      XCTFail("Expected envelope result")
-      return
-    }
+    let env = try UMAFEngine().envelope(for: inputURL)
 
     XCTAssertFalse(env.version.isEmpty)
     XCTAssertFalse(env.docTitle.isEmpty)
@@ -44,6 +39,9 @@ final class SchemaValidationTests: XCTestCase {
     XCTAssertGreaterThan(env.sizeBytes, 0)
     XCTAssertGreaterThan(env.lineCount, 0)
     XCTAssertFalse(env.normalized.isEmpty)
+    XCTAssertFalse(env.spans.isEmpty)
+    XCTAssertFalse(env.blocks.isEmpty)
+    XCTAssertEqual(env.featureFlags["structure"], true)
   }
 
   /// Property-style test: lineCount must equal the number of lines
@@ -103,14 +101,14 @@ final class SchemaValidationTests: XCTestCase {
       return
     }
 
-    let env1 = UMAFWalkerV0_5.ensureRootSpanAndBlock(UMAFWalkerV0_5.build(from: coreEnv))
+    let env1 = UMAFWalkerV0_7.ensureRootSpanAndBlock(UMAFWalkerV0_7.build(from: coreEnv))
 
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
     let encoded = try encoder.encode(env1)
 
     let decoder = JSONDecoder()
-    let env2 = try decoder.decode(UMAFEnvelopeV0_5.self, from: encoded)
+    let env2 = try decoder.decode(UMAFEnvelopeV0_7.self, from: encoded)
 
     XCTAssertEqual(env1.version, env2.version)
     XCTAssertEqual(env1.docTitle, env2.docTitle)

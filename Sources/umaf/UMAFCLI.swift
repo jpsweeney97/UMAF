@@ -39,12 +39,6 @@ struct UMAFCLI: AsyncParsableCommand {
   @Flag(name: .long, help: "Output canonical normalized text (usually Markdown).")
   var normalized: Bool = false
 
-  @Flag(
-    name: .long,
-    help: "Populate and emit structural spans/blocks alongside the envelope JSON."
-  )
-  var dumpStructure: Bool = false
-
   // Thread-safe state container using Actor
   actor BatchState {
     var successCount = 0
@@ -289,18 +283,8 @@ struct UMAFCLI: AsyncParsableCommand {
     sourceURL: URL,
     engine: UMAFEngine
   ) throws -> Data {
-    if dumpStructure && !json {
-      throw ValidationError("--dump-structure requires --json")
-    }
-
     if json {
-      let env = try engine.envelope(
-        for: sourceURL,
-        options: UMAFEngine.Options(
-          includeStructure: dumpStructure,
-          setStructureFeatureFlag: dumpStructure
-        )
-      )
+      let env = try engine.envelope(for: sourceURL)
       let enc = JSONEncoder()
       enc.outputFormatting = [.prettyPrinted, .sortedKeys]
       var out = try enc.encode(env)

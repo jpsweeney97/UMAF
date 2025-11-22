@@ -1,7 +1,7 @@
 {
-  "$id": "https://umaf.dev/specs/umaf-envelope-0.6.0.schema.json",
+  "$id": "https://umaf.dev/specs/umaf-envelope-0.7.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "UMAF Envelope v0.6.0",
+  "title": "UMAF Envelope v0.7.0",
   "type": "object",
   "required": [
     "version",
@@ -14,7 +14,10 @@
     "encoding",
     "sizeBytes",
     "lineCount",
-    "normalized"
+    "normalized",
+    "spans",
+    "blocks",
+    "featureFlags"
   ],
   "properties": {
     "version": { "type": "string" },
@@ -50,14 +53,20 @@
     },
     "spans": {
       "type": "array",
-      "items": { "$ref": "#/$defs/span" }
+      "items": { "$ref": "#/$defs/span" },
+      "minItems": 1
     },
     "blocks": {
       "type": "array",
-      "items": { "$ref": "#/$defs/block" }
+      "items": { "$ref": "#/$defs/block" },
+      "minItems": 1
     },
     "featureFlags": {
       "type": "object",
+      "properties": {
+        "structure": { "type": "boolean", "const": true }
+      },
+      "required": ["structure"],
       "additionalProperties": { "type": "boolean" }
     }
   },
@@ -142,12 +151,21 @@
     },
     "block": {
       "type": "object",
-      "required": ["id", "kind", "spanId"],
+      "required": ["id", "kind", "spanId", "provenance", "confidence"],
       "properties": {
         "id": { "type": "string" },
         "kind": {
           "type": "string",
-          "enum": ["root", "section", "paragraph", "bullet", "table", "code", "frontMatter", "raw"]
+          "enum": [
+            "root",
+            "section",
+            "paragraph",
+            "bullet",
+            "table",
+            "code",
+            "frontMatter",
+            "raw"
+          ]
         },
         "spanId": { "type": "string" },
         "parentId": { "type": "string" },

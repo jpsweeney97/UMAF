@@ -28,11 +28,11 @@ final class UMAFWalkerTask2Tests: XCTestCase {
     return url
   }
 
-  private func spanMap(for envelope: UMAFEnvelopeV0_5) -> [String: UMAFSpanV0_5] {
+  private func spanMap(for envelope: UMAFEnvelopeV0_7) -> [String: UMAFSpanV0_7] {
     Dictionary(uniqueKeysWithValues: envelope.spans.map { ($0.id, $0) })
   }
 
-  private func childrenByParent(_ blocks: [UMAFBlockV0_5]) -> [String: [UMAFBlockV0_5]] {
+  private func childrenByParent(_ blocks: [UMAFBlockV0_7]) -> [String: [UMAFBlockV0_7]] {
     blocks.reduce(into: [:]) { acc, block in
       guard let parent = block.parentId else { return }
       acc[parent, default: []].append(block)
@@ -48,7 +48,7 @@ final class UMAFWalkerTask2Tests: XCTestCase {
     return url
   }
 
-  private func markdownOutline(from envelope: UMAFEnvelopeV0_5) -> [OutlineEntry] {
+  private func markdownOutline(from envelope: UMAFEnvelopeV0_7) -> [OutlineEntry] {
     let spans = spanMap(for: envelope)
     return envelope.blocks
       .filter { $0.kind == .section }
@@ -91,7 +91,7 @@ final class UMAFWalkerTask2Tests: XCTestCase {
       """
 
     let url = try makeTempFile(with: md)
-    let envelope = try UMAFNormalization.envelopeV0_5(fromFileURL: url)
+    let envelope = try UMAFNormalization.envelopeV0_7(fromFileURL: url)
     let spans = spanMap(for: envelope)
     let spanIds = Set(spans.keys)
 
@@ -171,7 +171,7 @@ final class UMAFWalkerTask2Tests: XCTestCase {
   }
 
   func testCrucibleHasBlocksForHeadingsTablesAndCode() throws {
-    let envelope = try UMAFNormalization.envelopeV0_5(fromFileURL: try crucibleURL())
+    let envelope = try UMAFNormalization.envelopeV0_7(fromFileURL: try crucibleURL())
     let spans = spanMap(for: envelope)
 
     let sectionBlocks = envelope.blocks.filter { $0.kind == .section }

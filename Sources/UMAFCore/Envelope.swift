@@ -2,13 +2,13 @@
 //  Envelope.swift
 //  UMAFCore
 //
-//  Strongly-typed UMAF envelope model (v0.6 schema; type names retained for compatibility).
+//  Strongly-typed UMAF envelope model (v0.7 schema).
 //
 
 import Foundation
 
 /// Span of text in the normalized document (1-based lines; 0-based columns).
-public struct UMAFSpanV0_5: Codable, Hashable {
+public struct UMAFSpanV0_7: Codable, Hashable {
   public let id: String
   public let startLine: Int
   public let endLine: Int
@@ -31,7 +31,7 @@ public struct UMAFSpanV0_5: Codable, Hashable {
 }
 
 /// High-level kind for a semantic block.
-public enum UMAFBlockKindV0_5: String, Codable {
+public enum UMAFBlockKindV0_7: String, Codable {
   case root
   case section
   case paragraph
@@ -43,9 +43,9 @@ public enum UMAFBlockKindV0_5: String, Codable {
 }
 
 /// Logical block in the document, pointing at a `spanId`.
-public struct UMAFBlockV0_5: Codable, Hashable {
+public struct UMAFBlockV0_7: Codable, Hashable {
   public let id: String
-  public let kind: UMAFBlockKindV0_5
+  public let kind: UMAFBlockKindV0_7
   public let spanId: String
   public let parentId: String?
   public let level: Int?
@@ -56,14 +56,14 @@ public struct UMAFBlockV0_5: Codable, Hashable {
   public let metadata: [String: String]?
 
   /// Provenance of this block (e.g. rule path, extractor name).
-  public let provenance: String?
+  public let provenance: String
 
-  /// Confidence score in [0, 1], if available.
-  public let confidence: Double?
+  /// Confidence score in [0, 1].
+  public let confidence: Double
 
   public init(
     id: String,
-    kind: UMAFBlockKindV0_5,
+    kind: UMAFBlockKindV0_7,
     spanId: String,
     parentId: String? = nil,
     level: Int? = nil,
@@ -72,8 +72,8 @@ public struct UMAFBlockV0_5: Codable, Hashable {
     tableHeader: [String]? = nil,
     tableRows: [[String]]? = nil,
     metadata: [String: String]? = nil,
-    provenance: String? = nil,
-    confidence: Double? = nil
+    provenance: String,
+    confidence: Double
   ) {
     self.id = id
     self.kind = kind
@@ -90,12 +90,8 @@ public struct UMAFBlockV0_5: Codable, Hashable {
   }
 }
 
-/// UMAF envelope v0.6 – strongly-typed view of the JSON envelope.
-///
-/// It is intentionally compatible with the existing v0.4.1 JSON shape:
-/// - All previously-emitted fields keep their names and types.
-/// - New fields (`spans`, `blocks`, `featureFlags`) are optional.
-public struct UMAFEnvelopeV0_5: Codable, Hashable {
+/// UMAF envelope v0.7 – strongly-typed view of the JSON envelope.
+public struct UMAFEnvelopeV0_7: Codable, Hashable {
 
   // MARK: - Nested semantic types
 
@@ -179,7 +175,7 @@ public struct UMAFEnvelopeV0_5: Codable, Hashable {
     }
   }
 
-  // MARK: - Core metadata (matches existing envelope JSON)
+  // MARK: - Core metadata (matches envelope JSON)
 
   public let version: String
   public let docTitle: String
@@ -201,14 +197,14 @@ public struct UMAFEnvelopeV0_5: Codable, Hashable {
   public let tables: [Table]
   public let codeBlocks: [CodeBlock]
 
-  // MARK: - v0.6 additions
+  // MARK: - Structural fields (mandatory in v0.7)
 
-  /// All known spans in the document. Optional for backwards compatibility.
-  public var spans: [UMAFSpanV0_5]
-  /// All logical blocks, each pointing to a span. Optional for now.
-  public var blocks: [UMAFBlockV0_5]
+  /// All known spans in the document.
+  public var spans: [UMAFSpanV0_7]
+  /// All logical blocks, each pointing to a span.
+  public var blocks: [UMAFBlockV0_7]
   /// Feature flags toggling optional semantics/fields.
-  public var featureFlags: [String: Bool]?
+  public var featureFlags: [String: Bool]
 
   // MARK: - Init
 
@@ -229,9 +225,9 @@ public struct UMAFEnvelopeV0_5: Codable, Hashable {
     frontMatter: [FrontMatterEntry] = [],
     tables: [Table] = [],
     codeBlocks: [CodeBlock] = [],
-    spans: [UMAFSpanV0_5] = [],
-    blocks: [UMAFBlockV0_5] = [],
-    featureFlags: [String: Bool]? = nil
+    spans: [UMAFSpanV0_7],
+    blocks: [UMAFBlockV0_7],
+    featureFlags: [String: Bool] = ["structure": true]
   ) {
     self.version = version
     self.docTitle = docTitle
@@ -299,8 +295,8 @@ public struct UMAFEnvelopeV0_5: Codable, Hashable {
     self.tables = try c.decodeIfPresent([Table].self, forKey: .tables) ?? []
     self.codeBlocks = try c.decodeIfPresent([CodeBlock].self, forKey: .codeBlocks) ?? []
 
-    self.spans = try c.decodeIfPresent([UMAFSpanV0_5].self, forKey: .spans) ?? []
-    self.blocks = try c.decodeIfPresent([UMAFBlockV0_5].self, forKey: .blocks) ?? []
-    self.featureFlags = try c.decodeIfPresent([String: Bool].self, forKey: .featureFlags)
+    self.spans = try c.decode([UMAFSpanV0_7].self, forKey: .spans)
+    self.blocks = try c.decode([UMAFBlockV0_7].self, forKey: .blocks)
+    self.featureFlags = try c.decode([String: Bool].self, forKey: .featureFlags)
   }
 }

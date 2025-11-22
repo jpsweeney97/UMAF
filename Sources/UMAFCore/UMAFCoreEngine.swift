@@ -1,6 +1,6 @@
 //
 //  UMAFCoreEngine.swift
-//  Core formatting & semantic engine for UMAF (v0.6)
+//  Core formatting & semantic engine for UMAF (v0.7)
 //
 
 import Crypto

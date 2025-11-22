@@ -4,7 +4,7 @@ UMAF turns plain text, Markdown, JSON, and a few other formats into a compact
 **envelope** that's easy to consume, diff, and validate.
 
 - **CLI:** `umaf`
-- **Schema:** `spec/umaf-envelope-v0.6.0.json`
+- **Schema:** `spec/umaf-envelope-v0.7.0.json`
 
 ## Quick start
 
@@ -17,8 +17,7 @@ The CLI can emit:
 
 - `--json` - a UMAF envelope as JSON
 - `--normalized` - canonical normalized text (usually Markdown)
-- `--json --dump-structure` - envelope JSON with populated `spans`, `blocks`,
-  and `featureFlags.structure == true`
+- Structural spans/blocks are always included in `--json` output in UMAF 0.7.0.
 
 See [Envelope](envelope.md) for the schema and structural fields, and
 [CLI](cli.md) for all flags.

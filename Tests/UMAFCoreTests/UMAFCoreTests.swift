@@ -53,7 +53,7 @@ final class UMAFCoreTests: XCTestCase {
       return
     }
 
-    XCTAssertEqual(env.version, "umaf-0.6.0")
+    XCTAssertEqual(env.version, "umaf-0.7.0")
     XCTAssertEqual(env.mediaType, "text/markdown")
     XCTAssertFalse(env.normalized.isEmpty)
     XCTAssertGreaterThan(env.lineCount, 0)
@@ -113,7 +113,7 @@ final class UMAFCoreTests: XCTestCase {
     )
   }
 
-  func testStructureIsOptIn() throws {
+  func testStructureIsMandatory() throws {
     let tmpDir = try makeTempDir()
     let md = """
       # Title
@@ -125,18 +125,10 @@ final class UMAFCoreTests: XCTestCase {
 
     let engine = UMAFEngine()
 
-    let defaultEnv = try engine.envelope(for: inputURL)
-    XCTAssertTrue(defaultEnv.spans.isEmpty)
-    XCTAssertTrue(defaultEnv.blocks.isEmpty)
-    XCTAssertNil(defaultEnv.featureFlags?["structure"])
-
-    let structured = try engine.envelope(
-      for: inputURL,
-      options: UMAFEngine.Options(includeStructure: true)
-    )
-    XCTAssertFalse(structured.spans.isEmpty)
-    XCTAssertFalse(structured.blocks.isEmpty)
-    XCTAssertNil(structured.featureFlags?["structure"])
+    let env = try engine.envelope(for: inputURL)
+    XCTAssertFalse(env.spans.isEmpty)
+    XCTAssertFalse(env.blocks.isEmpty)
+    XCTAssertEqual(env.featureFlags["structure"], true)
   }
 
   // MARK: - Crucible tests
@@ -151,8 +143,8 @@ final class UMAFCoreTests: XCTestCase {
       return
     }
 
-    let env = UMAFWalkerV0_5.ensureRootSpanAndBlock(UMAFWalkerV0_5.build(from: coreEnv))
-    XCTAssertEqual(env.version, "umaf-0.6.0")
+    let env = UMAFWalkerV0_7.ensureRootSpanAndBlock(UMAFWalkerV0_7.build(from: coreEnv))
+    XCTAssertEqual(env.version, "umaf-0.7.0")
     XCTAssertGreaterThan(env.lineCount, 0)
     XCTAssertFalse(env.normalized.isEmpty)
   }

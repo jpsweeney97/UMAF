@@ -35,7 +35,7 @@ final class UMAFCLIIntegrationTests: XCTestCase {
     validate.arguments = [
       "node",
       "scripts/validate2020.mjs",
-      "--schema", "spec/umaf-envelope-v0.6.0.json",
+      "--schema", "spec/umaf-envelope-v0.7.0.json",
       "--data", envelopeURL.path,
       "--strict",
     ]
@@ -55,7 +55,7 @@ final class UMAFCLIIntegrationTests: XCTestCase {
     }
   }
 
-  func testDumpStructureFlagEmitsStructuralEnvelope() throws {
+  func testStructuralEnvelopeIsDefault() throws {
     let root = projectRootURL()
     let cli = cliURL()
     XCTAssertTrue(
@@ -67,13 +67,12 @@ final class UMAFCLIIntegrationTests: XCTestCase {
       .appendingPathComponent(UUID().uuidString + ".json")
     FileManager.default.createFile(atPath: outputURL.path, contents: nil)
 
-    // Run UMAF CLI with --json --dump-structure
+    // Run UMAF CLI with --json (structure is always emitted)
     let proc = Process()
     proc.executableURL = cli
     proc.arguments = [
       "--input", root.appendingPathComponent("crucible/markdown-crucible-v2.md").path,
       "--json",
-      "--dump-structure",
     ]
     proc.currentDirectoryURL = root
 
@@ -101,16 +100,12 @@ final class UMAFCLIIntegrationTests: XCTestCase {
       projectRootURL: root
     )
 
-    // Always: Swift-side structural assertions on UMAFEnvelopeV0_5
+    // Always: Swift-side structural assertions on UMAFEnvelopeV0_7
     let data = try Data(contentsOf: outputURL)
     let decoder = JSONDecoder()
-    let envelope = try decoder.decode(UMAFEnvelopeV0_5.self, from: data)
+    let envelope = try decoder.decode(UMAFEnvelopeV0_7.self, from: data)
 
-    XCTAssertEqual(
-      envelope.featureFlags?["structure"],
-      true,
-      "featureFlags.structure should be true when --dump-structure is used"
-    )
+    XCTAssertEqual(envelope.featureFlags["structure"], true)
 
     let spansById = Dictionary(uniqueKeysWithValues: envelope.spans.map { ($0.id, $0) })
 
@@ -141,42 +136,6 @@ final class UMAFCLIIntegrationTests: XCTestCase {
       XCTAssertLessThanOrEqual(span.endLine, envelope.lineCount)
       XCTAssertLessThanOrEqual(span.startLine, span.endLine)
     }
-  }
-  func testDumpStructureRequiresJson() throws {
-    let root = projectRootURL()
-    let cli = cliURL()
-    XCTAssertTrue(
-      FileManager.default.fileExists(atPath: cli.path),
-      "CLI must be built before running integration test"
-    )
-
-    let proc = Process()
-    proc.executableURL = cli
-    proc.arguments = [
-      "--input", root.appendingPathComponent("README.md").path,
-      "--dump-structure",
-    ]
-    proc.currentDirectoryURL = root
-
-    let errPipe = Pipe()
-    proc.standardOutput = Pipe()
-    proc.standardError = errPipe
-
-    try proc.run()
-    proc.waitUntilExit()
-
-    XCTAssertNotEqual(
-      proc.terminationStatus,
-      0,
-      "CLI should fail when --dump-structure is used without --json"
-    )
-
-    let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
-    let err = String(data: errData, encoding: .utf8) ?? ""
-    XCTAssertTrue(
-      err.contains("--dump-structure requires --json"),
-      "Expected error message about --dump-structure requiring --json, got: \(err)"
-    )
   }
 
 }

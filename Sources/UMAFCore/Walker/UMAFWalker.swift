@@ -1,7 +1,7 @@
 // Sources/UMAFCore/Walker/UMAFWalker.swift
 import Foundation
 
-enum UMAFWalkerV0_5 {
+enum UMAFWalkerV0_7 {
 
   private struct StableIDGenerator {
     private var counts: [String: Int] = [:]
@@ -86,23 +86,23 @@ enum UMAFWalkerV0_5 {
 
   static func build(
     from coreEnvelope: UMAFCoreEngine.Envelope
-  ) -> UMAFEnvelopeV0_5 {
-    let source = BlockProvenanceV0_5.source(for: coreEnvelope.mediaType)
+  ) -> UMAFEnvelopeV0_7 {
+    let source = BlockProvenanceV0_7.source(for: coreEnvelope.mediaType)
     let normalizedLines = coreEnvelope.normalized.split(
       separator: "\n", omittingEmptySubsequences: false
     ).map(String.init)
     let lineCount = max(1, coreEnvelope.lineCount)
 
-    var spans: [UMAFSpanV0_5] = []
-    var blocks: [UMAFBlockV0_5] = []
+    var spans: [UMAFSpanV0_7] = []
+    var blocks: [UMAFBlockV0_7] = []
     var ids = StableIDGenerator()
 
     let rootSpanId = "span:root"
-    let rootSpan = UMAFSpanV0_5(id: rootSpanId, startLine: 1, endLine: lineCount)
+    let rootSpan = UMAFSpanV0_7(id: rootSpanId, startLine: 1, endLine: lineCount)
     spans.append(rootSpan)
 
     let rootBlockId = "block:root"
-    let rootBlock = UMAFBlockV0_5(
+    let rootBlock = UMAFBlockV0_7(
       id: rootBlockId,
       kind: .root,
       spanId: rootSpanId,
@@ -164,13 +164,13 @@ enum UMAFWalkerV0_5 {
         let spanId = ids.nextSpan(prefix: "span:front")
         let blockId = ids.nextBlock(prefix: "block:front")
         spans.append(
-          UMAFSpanV0_5(
+          UMAFSpanV0_7(
             id: spanId, startLine: placement.range.lowerBound, endLine: placement.range.upperBound))
         var metadata: [String: String] = [:]
         for entry in placement.entries { metadata[entry.key] = entry.value }
-        let prov = BlockProvenanceV0_5.provenanceAndConfidence(for: .frontMatter, source: source)
+        let prov = BlockProvenanceV0_7.provenanceAndConfidence(for: .frontMatter, source: source)
         blocks.append(
-          UMAFBlockV0_5(
+          UMAFBlockV0_7(
             id: blockId, kind: .frontMatter, spanId: spanId, parentId: rootBlockId,
             metadata: metadata.isEmpty ? nil : metadata, provenance: prov.provenance,
             confidence: prov.confidence))
@@ -181,15 +181,15 @@ enum UMAFWalkerV0_5 {
         placement.spanId = spanId
         placement.blockId = blockId
         spans.append(
-          UMAFSpanV0_5(id: spanId, startLine: placement.startLine, endLine: placement.endLine))
+          UMAFSpanV0_7(id: spanId, startLine: placement.startLine, endLine: placement.endLine))
 
         blocks.append(
-          UMAFBlockV0_5(
+          UMAFBlockV0_7(
             id: blockId, kind: .section, spanId: spanId, parentId: rootBlockId,
             level: placement.section.level, heading: placement.section.heading,
-            provenance: BlockProvenanceV0_5.provenanceAndConfidence(for: .section, source: source)
+            provenance: BlockProvenanceV0_7.provenanceAndConfidence(for: .section, source: source)
               .provenance,
-            confidence: BlockProvenanceV0_5.provenanceAndConfidence(for: .section, source: source)
+            confidence: BlockProvenanceV0_7.provenanceAndConfidence(for: .section, source: source)
               .confidence
           ))
         sectionBlocks.append(placement)
@@ -198,18 +198,18 @@ enum UMAFWalkerV0_5 {
         let spanId = ids.nextSpan(prefix: "span:tbl")
         let blockId = ids.nextBlock(prefix: "block:tbl")
         spans.append(
-          UMAFSpanV0_5(
+          UMAFSpanV0_7(
             id: spanId, startLine: placement.range.lowerBound, endLine: placement.range.upperBound))
         let parentId =
           Self.parentSectionId(for: placement.range.lowerBound, sections: sectionBlocks)
           ?? rootBlockId
-        let prov = BlockProvenanceV0_5.provenanceAndConfidence(
+        let prov = BlockProvenanceV0_7.provenanceAndConfidence(
           for: .table, source: source,
-          tableInfo: BlockProvenanceV0_5.TableInfo(
+          tableInfo: BlockProvenanceV0_7.TableInfo(
             headerCount: placement.table.header.count, rowCounts: placement.table.rows.map(\.count))
         )
         blocks.append(
-          UMAFBlockV0_5(
+          UMAFBlockV0_7(
             id: blockId, kind: .table, spanId: spanId, parentId: parentId,
             tableHeader: placement.table.header, tableRows: placement.table.rows,
             provenance: prov.provenance, confidence: prov.confidence))
@@ -218,14 +218,14 @@ enum UMAFWalkerV0_5 {
         let spanId = ids.nextSpan(prefix: "span:code")
         let blockId = ids.nextBlock(prefix: "block:code")
         spans.append(
-          UMAFSpanV0_5(
+          UMAFSpanV0_7(
             id: spanId, startLine: placement.range.lowerBound, endLine: placement.range.upperBound))
         let parentId =
           Self.parentSectionId(for: placement.range.lowerBound, sections: sectionBlocks)
           ?? rootBlockId
-        let prov = BlockProvenanceV0_5.provenanceAndConfidence(for: .code, source: source)
+        let prov = BlockProvenanceV0_7.provenanceAndConfidence(for: .code, source: source)
         blocks.append(
-          UMAFBlockV0_5(
+          UMAFBlockV0_7(
             id: blockId, kind: .code, spanId: spanId, parentId: parentId,
             language: placement.block.language, provenance: prov.provenance,
             confidence: prov.confidence))
@@ -234,14 +234,14 @@ enum UMAFWalkerV0_5 {
         let spanId = ids.nextSpan(prefix: "span:bullet")
         let blockId = ids.nextBlock(prefix: "block:bullet")
         spans.append(
-          UMAFSpanV0_5(
+          UMAFSpanV0_7(
             id: spanId, startLine: placement.range.lowerBound, endLine: placement.range.upperBound))
         let parentId =
           Self.parentSectionId(for: placement.range.lowerBound, sections: sectionBlocks)
           ?? rootBlockId
-        let prov = BlockProvenanceV0_5.provenanceAndConfidence(for: .bullet, source: source)
+        let prov = BlockProvenanceV0_7.provenanceAndConfidence(for: .bullet, source: source)
         blocks.append(
-          UMAFBlockV0_5(
+          UMAFBlockV0_7(
             id: blockId, kind: .bullet, spanId: spanId, parentId: parentId,
             level: placement.bullet.sectionLevel, heading: placement.bullet.text,
             provenance: prov.provenance, confidence: prov.confidence))
@@ -258,10 +258,10 @@ enum UMAFWalkerV0_5 {
         let spanId = ids.nextSpan(prefix: "span:p")
         let blockId = ids.nextBlock(prefix: "block:p")
         spans.append(
-          UMAFSpanV0_5(id: spanId, startLine: range.lowerBound, endLine: range.upperBound))
-        let prov = BlockProvenanceV0_5.provenanceAndConfidence(for: .paragraph, source: source)
+          UMAFSpanV0_7(id: spanId, startLine: range.lowerBound, endLine: range.upperBound))
+        let prov = BlockProvenanceV0_7.provenanceAndConfidence(for: .paragraph, source: source)
         blocks.append(
-          UMAFBlockV0_5(
+          UMAFBlockV0_7(
             id: blockId, kind: .paragraph, spanId: spanId, parentId: section.blockId,
             provenance: prov.provenance, confidence: prov.confidence))
       }
@@ -274,38 +274,38 @@ enum UMAFWalkerV0_5 {
     for range in uncoveredRanges {
       let spanId = ids.nextSpan(prefix: "span:raw")
       let blockId = ids.nextBlock(prefix: "block:raw")
-      spans.append(UMAFSpanV0_5(id: spanId, startLine: range.lowerBound, endLine: range.upperBound))
+      spans.append(UMAFSpanV0_7(id: spanId, startLine: range.lowerBound, endLine: range.upperBound))
       let parentId =
         Self.parentSectionId(for: range.lowerBound, sections: sectionBlocks) ?? rootBlockId
-      let prov = BlockProvenanceV0_5.provenanceAndConfidence(for: .raw, source: source)
+      let prov = BlockProvenanceV0_7.provenanceAndConfidence(for: .raw, source: source)
       blocks.append(
-        UMAFBlockV0_5(
+        UMAFBlockV0_7(
           id: blockId, kind: .raw, spanId: spanId, parentId: parentId, provenance: prov.provenance,
           confidence: prov.confidence))
     }
 
     // Copy semantic data to envelope
     let sections = coreEnvelope.sections.map {
-      UMAFEnvelopeV0_5.Section(
+      UMAFEnvelopeV0_7.Section(
         heading: $0.heading, level: $0.level, lines: $0.lines, paragraphs: $0.paragraphs)
     }
     let bullets = coreEnvelope.bullets.map {
-      UMAFEnvelopeV0_5.Bullet(
+      UMAFEnvelopeV0_7.Bullet(
         text: $0.text, lineIndex: $0.lineIndex, sectionHeading: $0.sectionHeading,
         sectionLevel: $0.sectionLevel)
     }
     let frontMatter = coreEnvelope.frontMatter.map {
-      UMAFEnvelopeV0_5.FrontMatterEntry(key: $0.key, value: $0.value)
+      UMAFEnvelopeV0_7.FrontMatterEntry(key: $0.key, value: $0.value)
     }
     let tables = coreEnvelope.tables.map {
-      UMAFEnvelopeV0_5.Table(startLineIndex: $0.startLineIndex, header: $0.header, rows: $0.rows)
+      UMAFEnvelopeV0_7.Table(startLineIndex: $0.startLineIndex, header: $0.header, rows: $0.rows)
     }
     let codeBlocks = coreEnvelope.codeBlocks.map {
-      UMAFEnvelopeV0_5.CodeBlock(
+      UMAFEnvelopeV0_7.CodeBlock(
         startLineIndex: $0.startLineIndex, language: $0.language, code: $0.code)
     }
 
-    return UMAFEnvelopeV0_5(
+    return UMAFEnvelopeV0_7(
       version: coreEnvelope.version,
       docTitle: coreEnvelope.docTitle,
       docId: coreEnvelope.docId,
@@ -324,26 +324,27 @@ enum UMAFWalkerV0_5 {
       codeBlocks: codeBlocks,
       spans: spans,
       blocks: blocks,
-      featureFlags: nil
+      featureFlags: ["structure": true]
     )
   }
 
-  static func ensureRootSpanAndBlock(_ envelope: UMAFEnvelopeV0_5) -> UMAFEnvelopeV0_5 {
+  static func ensureRootSpanAndBlock(_ envelope: UMAFEnvelopeV0_7) -> UMAFEnvelopeV0_7 {
     var env = envelope
     let rootSpanId = "span:root"
     let rootBlockId = "block:root"
     let lineCount = max(1, env.lineCount)
 
     if env.spans.first(where: { $0.id == rootSpanId }) == nil {
-      env.spans.insert(UMAFSpanV0_5(id: rootSpanId, startLine: 1, endLine: lineCount), at: 0)
+      env.spans.insert(UMAFSpanV0_7(id: rootSpanId, startLine: 1, endLine: lineCount), at: 0)
     }
     if env.blocks.first(where: { $0.id == rootBlockId }) == nil {
       env.blocks.insert(
-        UMAFBlockV0_5(
+        UMAFBlockV0_7(
           id: rootBlockId, kind: .root, spanId: rootSpanId, parentId: nil, level: 1,
           heading: env.docTitle, metadata: ["mediaType": env.mediaType],
           provenance: "umaf:\(UMAFVersion.provenance):root", confidence: 1.0), at: 0)
     }
+    env.featureFlags["structure"] = true
     return env
   }
 

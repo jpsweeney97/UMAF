@@ -21,7 +21,7 @@ final class UMAFWalkerTask1Tests: XCTestCase {
       """
 
     let url = try makeTempFile(with: md)
-    let envelope = try UMAFNormalization.envelopeV0_5(fromFileURL: url)
+    let envelope = try UMAFNormalization.envelopeV0_7(fromFileURL: url)
 
     guard let rootSpan = envelope.spans.first(where: { $0.id == "span:root" }) else {
       XCTFail("Expected span:root")
