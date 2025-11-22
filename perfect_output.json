@@ -1,0 +1,628 @@
+{
+  "blocks": [
+    {
+      "confidence": 1,
+      "heading": "UMAF",
+      "id": "block:root",
+      "kind": "root",
+      "level": 1,
+      "metadata": {
+        "mediaType": "text/markdown"
+      },
+      "provenance": "umaf:0.7.0:root",
+      "spanId": "span:root"
+    },
+    {
+      "confidence": 1,
+      "heading": "UMAF",
+      "id": "block:sec:001",
+      "kind": "section",
+      "level": 1,
+      "parentId": "block:root",
+      "provenance": "umaf:0.7.0:markdown:heading",
+      "spanId": "span:sec:001"
+    },
+    {
+      "confidence": 1,
+      "heading": "Quick start",
+      "id": "block:sec:002",
+      "kind": "section",
+      "level": 2,
+      "parentId": "block:root",
+      "provenance": "umaf:0.7.0:markdown:heading",
+      "spanId": "span:sec:002"
+    },
+    {
+      "confidence": 1,
+      "heading": "Build the CLI",
+      "id": "block:sec:003",
+      "kind": "section",
+      "level": 3,
+      "parentId": "block:root",
+      "provenance": "umaf:0.7.0:markdown:heading",
+      "spanId": "span:sec:003"
+    },
+    {
+      "confidence": 1,
+      "id": "block:code:001",
+      "kind": "code",
+      "language": "bash",
+      "parentId": "block:sec:003",
+      "provenance": "umaf:0.7.0:markdown:code:fenced-backtick",
+      "spanId": "span:code:001"
+    },
+    {
+      "confidence": 1,
+      "heading": "Single File",
+      "id": "block:sec:004",
+      "kind": "section",
+      "level": 3,
+      "parentId": "block:root",
+      "provenance": "umaf:0.7.0:markdown:heading",
+      "spanId": "span:sec:004"
+    },
+    {
+      "confidence": 1,
+      "id": "block:code:002",
+      "kind": "code",
+      "language": "bash",
+      "parentId": "block:sec:004",
+      "provenance": "umaf:0.7.0:markdown:code:fenced-backtick",
+      "spanId": "span:code:002"
+    },
+    {
+      "confidence": 1,
+      "heading": "Batch Mode (High Performance)",
+      "id": "block:sec:005",
+      "kind": "section",
+      "level": 3,
+      "parentId": "block:root",
+      "provenance": "umaf:0.7.0:markdown:heading",
+      "spanId": "span:sec:005"
+    },
+    {
+      "confidence": 1,
+      "id": "block:code:003",
+      "kind": "code",
+      "language": "bash",
+      "parentId": "block:sec:005",
+      "provenance": "umaf:0.7.0:markdown:code:fenced-backtick",
+      "spanId": "span:code:003"
+    },
+    {
+      "confidence": 1,
+      "heading": "Watch Mode",
+      "id": "block:sec:006",
+      "kind": "section",
+      "level": 3,
+      "parentId": "block:root",
+      "provenance": "umaf:0.7.0:markdown:heading",
+      "spanId": "span:sec:006"
+    },
+    {
+      "confidence": 1,
+      "id": "block:code:004",
+      "kind": "code",
+      "language": "bash",
+      "parentId": "block:sec:006",
+      "provenance": "umaf:0.7.0:markdown:code:fenced-backtick",
+      "spanId": "span:code:004"
+    },
+    {
+      "confidence": 1,
+      "heading": "Features",
+      "id": "block:sec:007",
+      "kind": "section",
+      "level": 2,
+      "parentId": "block:root",
+      "provenance": "umaf:0.7.0:markdown:heading",
+      "spanId": "span:sec:007"
+    },
+    {
+      "confidence": 1,
+      "heading": "Deterministic: Stable hashing and normalization.",
+      "id": "block:bullet:001",
+      "kind": "bullet",
+      "level": 2,
+      "parentId": "block:sec:007",
+      "provenance": "umaf:0.7.0:markdown:bullet",
+      "spanId": "span:bullet:001"
+    },
+    {
+      "confidence": 1,
+      "heading": "Fast: Parallel batch processing (sub-millisecond overhead per file).",
+      "id": "block:bullet:002",
+      "kind": "bullet",
+      "level": 2,
+      "parentId": "block:sec:007",
+      "provenance": "umaf:0.7.0:markdown:bullet",
+      "spanId": "span:bullet:002"
+    },
+    {
+      "confidence": 1,
+      "heading": "Live: Watch mode for instant feedback loops.",
+      "id": "block:bullet:003",
+      "kind": "bullet",
+      "level": 2,
+      "parentId": "block:sec:007",
+      "provenance": "umaf:0.7.0:markdown:bullet",
+      "spanId": "span:bullet:003"
+    },
+    {
+      "confidence": 1,
+      "heading": "Typed: JSON Schema validation for all outputs.",
+      "id": "block:bullet:004",
+      "kind": "bullet",
+      "level": 2,
+      "parentId": "block:sec:007",
+      "provenance": "umaf:0.7.0:markdown:bullet",
+      "spanId": "span:bullet:004"
+    },
+    {
+      "confidence": 1,
+      "heading": "Structured: Spans/blocks are always emitted for richer downstream processing.",
+      "id": "block:bullet:005",
+      "kind": "bullet",
+      "level": 2,
+      "parentId": "block:sec:007",
+      "provenance": "umaf:0.7.0:markdown:bullet",
+      "spanId": "span:bullet:005"
+    },
+    {
+      "confidence": 1,
+      "heading": "Project layout",
+      "id": "block:sec:008",
+      "kind": "section",
+      "level": 2,
+      "parentId": "block:root",
+      "provenance": "umaf:0.7.0:markdown:heading",
+      "spanId": "span:sec:008"
+    },
+    {
+      "confidence": 1,
+      "heading": "`Sources/UMAFCore`: Core logic and adapters.",
+      "id": "block:bullet:006",
+      "kind": "bullet",
+      "level": 2,
+      "parentId": "block:sec:008",
+      "provenance": "umaf:0.7.0:markdown:bullet",
+      "spanId": "span:bullet:006"
+    },
+    {
+      "confidence": 1,
+      "heading": "`Sources/umaf`: CLI entry point.",
+      "id": "block:bullet:007",
+      "kind": "bullet",
+      "level": 2,
+      "parentId": "block:sec:008",
+      "provenance": "umaf:0.7.0:markdown:bullet",
+      "spanId": "span:bullet:007"
+    },
+    {
+      "confidence": 1,
+      "heading": "`spec/`: JSON Schema definitions.",
+      "id": "block:bullet:008",
+      "kind": "bullet",
+      "level": 2,
+      "parentId": "block:sec:008",
+      "provenance": "umaf:0.7.0:markdown:bullet",
+      "spanId": "span:bullet:008"
+    },
+    {
+      "confidence": 1,
+      "heading": "License",
+      "id": "block:sec:009",
+      "kind": "section",
+      "level": 2,
+      "parentId": "block:root",
+      "provenance": "umaf:0.7.0:markdown:heading",
+      "spanId": "span:sec:009"
+    },
+    {
+      "confidence": 0.95,
+      "id": "block:p:001",
+      "kind": "paragraph",
+      "parentId": "block:sec:001",
+      "provenance": "umaf:0.7.0:markdown:paragraph",
+      "spanId": "span:p:001"
+    },
+    {
+      "confidence": 0.95,
+      "id": "block:p:002",
+      "kind": "paragraph",
+      "parentId": "block:sec:001",
+      "provenance": "umaf:0.7.0:markdown:paragraph",
+      "spanId": "span:p:002"
+    },
+    {
+      "confidence": 0.95,
+      "id": "block:p:003",
+      "kind": "paragraph",
+      "parentId": "block:sec:001",
+      "provenance": "umaf:0.7.0:markdown:paragraph",
+      "spanId": "span:p:003"
+    },
+    {
+      "confidence": 0.95,
+      "id": "block:p:004",
+      "kind": "paragraph",
+      "parentId": "block:sec:004",
+      "provenance": "umaf:0.7.0:markdown:paragraph",
+      "spanId": "span:p:004"
+    },
+    {
+      "confidence": 0.95,
+      "id": "block:p:005",
+      "kind": "paragraph",
+      "parentId": "block:sec:005",
+      "provenance": "umaf:0.7.0:markdown:paragraph",
+      "spanId": "span:p:005"
+    },
+    {
+      "confidence": 0.95,
+      "id": "block:p:006",
+      "kind": "paragraph",
+      "parentId": "block:sec:006",
+      "provenance": "umaf:0.7.0:markdown:paragraph",
+      "spanId": "span:p:006"
+    },
+    {
+      "confidence": 0.95,
+      "id": "block:p:007",
+      "kind": "paragraph",
+      "parentId": "block:sec:009",
+      "provenance": "umaf:0.7.0:markdown:paragraph",
+      "spanId": "span:p:007"
+    }
+  ],
+  "bullets": [
+    {
+      "lineIndex": 45,
+      "sectionHeading": "Features",
+      "sectionLevel": 2,
+      "text": "Deterministic: Stable hashing and normalization."
+    },
+    {
+      "lineIndex": 46,
+      "sectionHeading": "Features",
+      "sectionLevel": 2,
+      "text": "Fast: Parallel batch processing (sub-millisecond overhead per file)."
+    },
+    {
+      "lineIndex": 47,
+      "sectionHeading": "Features",
+      "sectionLevel": 2,
+      "text": "Live: Watch mode for instant feedback loops."
+    },
+    {
+      "lineIndex": 48,
+      "sectionHeading": "Features",
+      "sectionLevel": 2,
+      "text": "Typed: JSON Schema validation for all outputs."
+    },
+    {
+      "lineIndex": 49,
+      "sectionHeading": "Features",
+      "sectionLevel": 2,
+      "text": "Structured: Spans/blocks are always emitted for richer downstream processing."
+    },
+    {
+      "lineIndex": 53,
+      "sectionHeading": "Project layout",
+      "sectionLevel": 2,
+      "text": "`Sources/UMAFCore`: Core logic and adapters."
+    },
+    {
+      "lineIndex": 54,
+      "sectionHeading": "Project layout",
+      "sectionLevel": 2,
+      "text": "`Sources/umaf`: CLI entry point."
+    },
+    {
+      "lineIndex": 55,
+      "sectionHeading": "Project layout",
+      "sectionLevel": 2,
+      "text": "`spec/`: JSON Schema definitions."
+    }
+  ],
+  "codeBlocks": [
+    {
+      "code": "swift build -c release\n",
+      "language": "bash",
+      "startLineIndex": 15
+    },
+    {
+      "code": "./.build/release/umaf --input input.md --json > output.json\n",
+      "language": "bash",
+      "startLineIndex": 23
+    },
+    {
+      "code": "./.build/release/umaf --input-dir ./corpus --output-dir ./out --json\n",
+      "language": "bash",
+      "startLineIndex": 31
+    },
+    {
+      "code": "./.build/release/umaf --input-dir ./corpus --output-dir ./out --watch\n",
+      "language": "bash",
+      "startLineIndex": 39
+    }
+  ],
+  "createdAt": "2025-11-22T05:10:27Z",
+  "docId": "a06c38e7814d",
+  "docTitle": "UMAF",
+  "encoding": "utf-8",
+  "featureFlags": {
+    "structure": true
+  },
+  "frontMatter": [],
+  "lineCount": 60,
+  "mediaType": "text/markdown",
+  "normalized": "# UMAF\n\nUMAF (Universal Machine‑readable Archive Format) is a tiny, fast transformer that ingests\n**plain text**, **Markdown**, **JSON**, and common formats (HTML, PDF, DOCX via adapters)\nand emits a consistent, machine‑friendly **UMAF envelope**.\n\n> Current envelope schema: `umaf-envelope-0.7.0`\n\n---\n\n## Quick start\n\n\n### Build the CLI\n\n```bash\nswift build -c release\n```\n\n### Single File\n\nTransform a single file and output to stdout:\n\n```bash\n./.build/release/umaf --input input.md --json > output.json\n```\n\n### Batch Mode (High Performance)\n\nProcess thousands of files in parallel using all CPU cores:\n\n```bash\n./.build/release/umaf --input-dir ./corpus --output-dir ./out --json\n```\n\n### Watch Mode\n\nLive-update output files as you edit source content:\n\n```bash\n./.build/release/umaf --input-dir ./corpus --output-dir ./out --watch\n```\n\n## Features\n\n- **Deterministic**: Stable hashing and normalization.\n- **Fast**: Parallel batch processing (sub-millisecond overhead per file).\n- **Live**: Watch mode for instant feedback loops.\n- **Typed**: JSON Schema validation for all outputs.\n- **Structured**: Spans/blocks are always emitted for richer downstream processing.\n\n## Project layout\n\n- `Sources/UMAFCore`: Core logic and adapters.\n- `Sources/umaf`: CLI entry point.\n- `spec/`: JSON Schema definitions.\n\n## License\n\nISC © 2025 JP Sweeney",
+  "sections": [
+    {
+      "heading": "UMAF",
+      "level": 1,
+      "lines": [
+        "",
+        "UMAF (Universal Machine‑readable Archive Format) is a tiny, fast transformer that ingests",
+        "**plain text**, **Markdown**, **JSON**, and common formats (HTML, PDF, DOCX via adapters)",
+        "and emits a consistent, machine‑friendly **UMAF envelope**.",
+        "",
+        "> Current envelope schema: `umaf-envelope-0.7.0`",
+        "",
+        "---"
+      ],
+      "paragraphs": [
+        "UMAF (Universal Machine‑readable Archive Format) is a tiny, fast transformer that ingests\n**plain text**, **Markdown**, **JSON**, and common formats (HTML, PDF, DOCX via adapters)\nand emits a consistent, machine‑friendly **UMAF envelope**.",
+        "> Current envelope schema: `umaf-envelope-0.7.0`",
+        "---"
+      ]
+    },
+    {
+      "heading": "Quick start",
+      "level": 2,
+      "lines": [""],
+      "paragraphs": []
+    },
+    {
+      "heading": "Build the CLI",
+      "level": 3,
+      "lines": ["", "```bash", "swift build -c release", "```"],
+      "paragraphs": ["```bash\nswift build -c release\n```"]
+    },
+    {
+      "heading": "Single File",
+      "level": 3,
+      "lines": [
+        "",
+        "Transform a single file and output to stdout:",
+        "",
+        "```bash",
+        "./.build/release/umaf --input input.md --json > output.json",
+        "```"
+      ],
+      "paragraphs": [
+        "Transform a single file and output to stdout:",
+        "```bash\n./.build/release/umaf --input input.md --json > output.json\n```"
+      ]
+    },
+    {
+      "heading": "Batch Mode (High Performance)",
+      "level": 3,
+      "lines": [
+        "",
+        "Process thousands of files in parallel using all CPU cores:",
+        "",
+        "```bash",
+        "./.build/release/umaf --input-dir ./corpus --output-dir ./out --json",
+        "```"
+      ],
+      "paragraphs": [
+        "Process thousands of files in parallel using all CPU cores:",
+        "```bash\n./.build/release/umaf --input-dir ./corpus --output-dir ./out --json\n```"
+      ]
+    },
+    {
+      "heading": "Watch Mode",
+      "level": 3,
+      "lines": [
+        "",
+        "Live-update output files as you edit source content:",
+        "",
+        "```bash",
+        "./.build/release/umaf --input-dir ./corpus --output-dir ./out --watch",
+        "```"
+      ],
+      "paragraphs": [
+        "Live-update output files as you edit source content:",
+        "```bash\n./.build/release/umaf --input-dir ./corpus --output-dir ./out --watch\n```"
+      ]
+    },
+    {
+      "heading": "Features",
+      "level": 2,
+      "lines": [
+        "",
+        "- **Deterministic**: Stable hashing and normalization.",
+        "- **Fast**: Parallel batch processing (sub-millisecond overhead per file).",
+        "- **Live**: Watch mode for instant feedback loops.",
+        "- **Typed**: JSON Schema validation for all outputs.",
+        "- **Structured**: Spans/blocks are always emitted for richer downstream processing."
+      ],
+      "paragraphs": [
+        "- **Deterministic**: Stable hashing and normalization.\n- **Fast**: Parallel batch processing (sub-millisecond overhead per file).\n- **Live**: Watch mode for instant feedback loops.\n- **Typed**: JSON Schema validation for all outputs.\n- **Structured**: Spans/blocks are always emitted for richer downstream processing."
+      ]
+    },
+    {
+      "heading": "Project layout",
+      "level": 2,
+      "lines": [
+        "",
+        "- `Sources/UMAFCore`: Core logic and adapters.",
+        "- `Sources/umaf`: CLI entry point.",
+        "- `spec/`: JSON Schema definitions."
+      ],
+      "paragraphs": [
+        "- `Sources/UMAFCore`: Core logic and adapters.\n- `Sources/umaf`: CLI entry point.\n- `spec/`: JSON Schema definitions."
+      ]
+    },
+    {
+      "heading": "License",
+      "level": 2,
+      "lines": ["", "ISC © 2025 JP Sweeney"],
+      "paragraphs": ["ISC © 2025 JP Sweeney"]
+    }
+  ],
+  "sizeBytes": 1352,
+  "sourceHash": "a06c38e7814d89ddb2ac9a9eb49dc31df50df25a4eb322863ee1d36537a83c54",
+  "sourcePath": "/Users/jp/Projects/UMAF/README.md",
+  "spans": [
+    {
+      "endLine": 60,
+      "id": "span:root",
+      "startLine": 1
+    },
+    {
+      "endLine": 10,
+      "id": "span:sec:001",
+      "startLine": 1
+    },
+    {
+      "endLine": 13,
+      "id": "span:sec:002",
+      "startLine": 11
+    },
+    {
+      "endLine": 19,
+      "id": "span:sec:003",
+      "startLine": 14
+    },
+    {
+      "endLine": 19,
+      "id": "span:code:001",
+      "startLine": 16
+    },
+    {
+      "endLine": 27,
+      "id": "span:sec:004",
+      "startLine": 20
+    },
+    {
+      "endLine": 27,
+      "id": "span:code:002",
+      "startLine": 24
+    },
+    {
+      "endLine": 35,
+      "id": "span:sec:005",
+      "startLine": 28
+    },
+    {
+      "endLine": 35,
+      "id": "span:code:003",
+      "startLine": 32
+    },
+    {
+      "endLine": 43,
+      "id": "span:sec:006",
+      "startLine": 36
+    },
+    {
+      "endLine": 43,
+      "id": "span:code:004",
+      "startLine": 40
+    },
+    {
+      "endLine": 51,
+      "id": "span:sec:007",
+      "startLine": 44
+    },
+    {
+      "endLine": 46,
+      "id": "span:bullet:001",
+      "startLine": 46
+    },
+    {
+      "endLine": 47,
+      "id": "span:bullet:002",
+      "startLine": 47
+    },
+    {
+      "endLine": 48,
+      "id": "span:bullet:003",
+      "startLine": 48
+    },
+    {
+      "endLine": 49,
+      "id": "span:bullet:004",
+      "startLine": 49
+    },
+    {
+      "endLine": 50,
+      "id": "span:bullet:005",
+      "startLine": 50
+    },
+    {
+      "endLine": 57,
+      "id": "span:sec:008",
+      "startLine": 52
+    },
+    {
+      "endLine": 54,
+      "id": "span:bullet:006",
+      "startLine": 54
+    },
+    {
+      "endLine": 55,
+      "id": "span:bullet:007",
+      "startLine": 55
+    },
+    {
+      "endLine": 56,
+      "id": "span:bullet:008",
+      "startLine": 56
+    },
+    {
+      "endLine": 60,
+      "id": "span:sec:009",
+      "startLine": 58
+    },
+    {
+      "endLine": 5,
+      "id": "span:p:001",
+      "startLine": 3
+    },
+    {
+      "endLine": 7,
+      "id": "span:p:002",
+      "startLine": 7
+    },
+    {
+      "endLine": 9,
+      "id": "span:p:003",
+      "startLine": 9
+    },
+    {
+      "endLine": 22,
+      "id": "span:p:004",
+      "startLine": 22
+    },
+    {
+      "endLine": 30,
+      "id": "span:p:005",
+      "startLine": 30
+    },
+    {
+      "endLine": 38,
+      "id": "span:p:006",
+      "startLine": 38
+    },
+    {
+      "endLine": 60,
+      "id": "span:p:007",
+      "startLine": 60
+    }
+  ],
+  "tables": [],
+  "version": "umaf-0.7.0"
+}

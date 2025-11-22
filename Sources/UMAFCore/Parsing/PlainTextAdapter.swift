@@ -1,14 +1,13 @@
 //
-//  LegacyAdapter.swift
+//  PlainTextAdapter.swift
 //  UMAFCore
 //
-//  Fallback parser and generator for plain text and legacy formats.
-//  Refactored to normalize and analyze structure in a single pass.
+//  Minimal normalizer for non-Markdown text (plain, JSON, etc.).
 //
 
 import Foundation
 
-struct LegacyAdapter {
+struct PlainTextAdapter {
 
   struct ParseResult {
     let normalizedText: String
@@ -19,7 +18,7 @@ struct LegacyAdapter {
     let codeBlocks: [UMAFCoreEngine.CodeBlock]
   }
 
-  /// One-shot parse and normalize for legacy content.
+  /// One-shot parse and normalize for plain content.
   static func parseAndNormalize(text: String, mediaType: String) -> ParseResult {
     var normalizedLines: [String] = []
 
@@ -27,12 +26,7 @@ struct LegacyAdapter {
     let rawLines = text.components(separatedBy: "\n")
     let cleanLines = canonicalizeMarkdownLines(rawLines)
 
-    // 2. Build output (Single "Document" section for legacy types)
-    // Legacy format:
-    // # Document
-    // <blank>
-    // <content>
-
+    // 2. Build output (Single "Document" section)
     normalizedLines.append("# Document")
     normalizedLines.append("")
     let bodyStartIndex = 2
@@ -43,7 +37,6 @@ struct LegacyAdapter {
     let endLineIndex = normalizedLines.count - 1
 
     // 3. Extract Bullets (mapped to new indices)
-    // Since we just prepended 2 lines, the shift is +2.
     var bullets: [UMAFCoreEngine.Bullet] = []
     for (idx, line) in cleanLines.enumerated() {
       let trimmedLeft = line.drop(while: { $0 == " " || $0 == "\t" })
@@ -67,8 +60,6 @@ struct LegacyAdapter {
 
     let paragraphs = makeParagraphs(from: cleanLines)
 
-    // FIX: Prepend "" to lines to align with SwiftMarkdownAdapter structure
-    // where lines[0] is the blank spacer after the heading.
     let sectionLines = [""] + cleanLines
 
     let section = UMAFCoreEngine.Section(

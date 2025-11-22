@@ -10,9 +10,8 @@ umaf --help
 - `--input-dir <path>`: **Batch Mode** input directory (scans recursively).
 - `--output-dir <path>`: **Batch Mode** output directory (required with `--input-dir`).
 - `--watch`: Watch input directory for changes and re-process instantly.
-- `--json`: Output UMAF envelope JSON (default).
+- `--json`: Output UMAF envelope JSON (default, includes spans/blocks and `featureFlags.structure=true`).
 - `--normalized`: Output canonical normalized text (Markdown where possible).
-  Structural spans/blocks are always emitted with `--json` in UMAF 0.7.0.
 
 ## Examples
 

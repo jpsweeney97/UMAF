@@ -134,12 +134,11 @@ enum UMAFWalkerV0_7 {
     }
     let bulletLineSet = Self.lineSet(for: bulletPlacements.map(\.range))
 
-    // Fix: Removed hasHeading argument
-    let sectionPlacements = coreEnvelope.sections.map { section in
+    let sectionPlacements = coreEnvelope.sections.map {
       SectionPlacement(
-        section: section,
-        startLine: section.startLineIndex + 1,
-        endLine: section.endLineIndex + 1
+        section: $0,
+        startLine: $0.startLineIndex + 1,
+        endLine: $0.endLineIndex + 1
       )
     }
 
@@ -285,10 +284,7 @@ enum UMAFWalkerV0_7 {
     }
 
     // Copy semantic data to envelope
-    let sections = coreEnvelope.sections.map {
-      UMAFEnvelopeV0_7.Section(
-        heading: $0.heading, level: $0.level, lines: $0.lines, paragraphs: $0.paragraphs)
-    }
+    let sections = coreEnvelope.sections.map { $0.asEnvelopeSection() }
     let bullets = coreEnvelope.bullets.map {
       UMAFEnvelopeV0_7.Bullet(
         text: $0.text, lineIndex: $0.lineIndex, sectionHeading: $0.sectionHeading,

@@ -28,16 +28,20 @@ public enum InputRouter {
 
   /// Load and normalize an input file, returning text + media types.
   public static func load(from url: URL, data: Data) throws -> RoutedInput {
+    return try load(from: url, data: data, predecoded: nil)
+  }
+
+  public static func load(from url: URL, data: Data, predecoded: String?) throws -> RoutedInput {
     let ext = url.pathExtension.lowercased()
 
     switch ext {
     case "md":
-      let raw = stringFromData(data)
+      let raw = predecoded ?? stringFromData(data)
       let normalized = TextNormalization.normalizeLineEndings(raw)
       return makeInput(text: normalized, mediaType: "text/markdown", semanticType: "text/markdown")
 
     case "json":
-      let raw = stringFromData(data)
+      let raw = predecoded ?? stringFromData(data)
       let normalizedText = TextNormalization.normalizeLineEndings(raw)
       let obj = try JSONSerialization.jsonObject(with: Data(normalizedText.utf8))
       let canonical = try JSONSerialization.data(
@@ -48,11 +52,11 @@ public enum InputRouter {
       return makeInput(
         text: canonicalText,
         mediaType: "application/json",
-        semanticType: "application/json"
+        semanticType: "text/markdown"
       )
 
     case "html", "htm":
-      let raw = stringFromData(data)
+      let raw = predecoded ?? stringFromData(data)
       // Fix: Add 'try' because SwiftSoup parsing can throw
       let markdownish = try HTMLAdapter.htmlToMarkdownish(raw)
       return makeInput(text: markdownish, mediaType: "text/html", semanticType: "text/markdown")
@@ -64,7 +68,7 @@ public enum InputRouter {
         : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       let extracted = try DOCXAdapter.extractPlainText(usingTextUtilFrom: url)
       let normalized = TextNormalization.normalizeLineEndings(extracted)
-      return makeInput(text: normalized, mediaType: mediaType, semanticType: "text/plain")
+      return makeInput(text: normalized, mediaType: mediaType, semanticType: "text/markdown")
 
     case "pdf":
       let markdownish = try PDFKitAdapter.extractMarkdownish(from: url)
@@ -73,9 +77,10 @@ public enum InputRouter {
         text: normalized, mediaType: "application/pdf", semanticType: "text/markdown")
 
     default:
-      let raw = stringFromData(data)
+      let raw = predecoded ?? stringFromData(data)
       let normalized = TextNormalization.normalizeLineEndings(raw)
-      return makeInput(text: normalized, mediaType: "text/plain", semanticType: "text/plain")
+      UMAFLog.logger.warning("Plain-text router path used for \(url.lastPathComponent)")
+      return makeInput(text: normalized, mediaType: "text/plain", semanticType: "text/markdown")
     }
   }
 

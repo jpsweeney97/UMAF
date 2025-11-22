@@ -23,7 +23,7 @@ struct SwiftMarkdownAdapter {
 
   static func parse(text: String) -> ParseResult {
     let document = Document(parsing: text)
-    let sourceLines = text.components(separatedBy: "\n")
+    let sourceLines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
     let (frontMatter, fmEndIndex) = parseFrontMatter(sourceLines: sourceLines)
 
@@ -45,6 +45,7 @@ struct SwiftMarkdownAdapter {
 
     var sections: [UMAFCoreEngine.Section] = []
     var normalizedLines: [String] = []
+    normalizedLines.reserveCapacity(sourceLines.count + (frontMatter.count * 2) + 8)
     var currentOutputLine = 0
 
     var outBullets: [UMAFCoreEngine.Bullet] = []
@@ -101,8 +102,8 @@ struct SwiftMarkdownAdapter {
           level: currentLevel,
           lines: sectionLines,
           paragraphs: p,
-          startLineIndex: sectionStartIndex,  // NEW
-          endLineIndex: sectionEndIndex  // NEW
+          startLineIndex: sectionStartIndex,
+          endLineIndex: sectionEndIndex
         ))
 
       let effectiveOffset = bodyStartOutputIndex - (currentBodyStartSourceIndex + trimTopCount)

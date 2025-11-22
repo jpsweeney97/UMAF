@@ -8,7 +8,8 @@
 
 - **Breaking:** Schema bumped to `umaf-envelope-v0.7.0`; spans, blocks, and featureFlags are required and every block must carry provenance + confidence.
 - **Rich envelopes by default:** Engine always performs structural analysis and sets `featureFlags.structure == true`; CLI no longer offers a slim/structure toggle.
-- **Model updates:** Introduced `UMAFEnvelopeV0_7`/span/block types with non-optional provenance/confidence; walker/engine logic emits full structure.
+- **Model updates:** Unified on `UMAFEnvelopeV0_7` types; removed legacy adapters and routed plain inputs through markdown-compatible normalization; added lazy file scanning and chunked atomic writes.
+- **Performance:** Added micro-benchmark + `scripts/check-perf.mjs` to guard batch performance; markdown adapter allocation reductions.
 - **Provenance:** Rule paths now use the 0.7.0 prefix with default confidence 1.0 for unambiguous syntax; paragraph/ragged cases retain lower scores.
 - **Schema/docs:** Added `spec/umaf-envelope-v0.7.0.json`, updated docs/README/validation scripts to reference v0.7.0.
 

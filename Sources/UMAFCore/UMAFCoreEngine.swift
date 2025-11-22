@@ -24,7 +24,7 @@ public enum UMAFCoreEngine {
   }
 
   static func makeParagraphs(from lines: [String]) -> [String] {
-    return LegacyAdapter.makeParagraphs(from: lines)
+    return PlainTextAdapter.makeParagraphs(from: lines)
   }
 
   // MARK: - Transformer
@@ -41,7 +41,11 @@ public enum UMAFCoreEngine {
     public func transformFile(inputURL url: URL, outputFormat: OutputFormat) throws -> Result {
       let data = try Data(contentsOf: url)
       let sizeBytes = data.count
-      let routed = try InputRouter.load(from: url, data: data)
+
+      let (decoded, utf8OK) = TextNormalization.decodeUTF8(data)
+      UMAFLog.logger.debug("transformFile decode utf8OK=\(utf8OK) bytes=\(sizeBytes)")
+
+      let routed = try InputRouter.load(from: url, data: data, predecoded: decoded)
 
       let semanticResult:
         (
@@ -53,30 +57,15 @@ public enum UMAFCoreEngine {
           codeBlocks: [CodeBlock]
         )
 
-      if routed.semanticMediaType == "text/markdown" {
-        let result = SwiftMarkdownAdapter.parse(text: routed.normalizedText)
-        semanticResult = (
-          result.normalizedText,
-          result.sections,
-          result.bullets,
-          result.frontMatter,
-          result.tables,
-          result.codeBlocks
-        )
-      } else {
-        // Unified Legacy Path
-        let result = LegacyAdapter.parseAndNormalize(
-          text: routed.normalizedText, mediaType: routed.semanticMediaType)
-
-        semanticResult = (
-          result.normalizedText,
-          result.sections,
-          result.bullets,
-          result.frontMatter,
-          result.tables,
-          result.codeBlocks
-        )
-      }
+      let result = SwiftMarkdownAdapter.parse(text: routed.normalizedText)
+      semanticResult = (
+        result.normalizedText,
+        result.sections,
+        result.bullets,
+        result.frontMatter,
+        result.tables,
+        result.codeBlocks
+      )
 
       switch outputFormat {
       case .jsonEnvelope:

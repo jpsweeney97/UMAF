@@ -155,21 +155,26 @@ struct UMAFCLI: AsyncParsableCommand {
 
     print("→ Scanning \(inputDir)...")
 
-    // FIX: Step 1 - Synchronously gather all candidates first.
-    // This prevents the non-Sendable enumerator from overlapping with async await calls.
-    let allCandidates = scanCandidates(in: inUrl)
+    let candidates = UMAFFileSystemUtils.scanCandidatesLazy(
+      in: inUrl,
+      allowedExtensions: ["md", "txt", "json", "html", "pdf", "docx"]
+    )
 
-    // FIX: Step 2 - Asynchronously filter them using the actor.
     var filesToProcess: [URL] = []
+    var scannedCount = 0
     if let cache = cache {
-      for fileURL in allCandidates {
+      for fileURL in candidates {
+        scannedCount += 1
         let relativePath = fileURL.path.replacingOccurrences(of: inUrl.path + "/", with: "")
         if await cache.shouldProcess(fileURL: fileURL, relativePath: relativePath) {
           filesToProcess.append(fileURL)
         }
       }
     } else {
-      filesToProcess = allCandidates
+      for fileURL in candidates {
+        scannedCount += 1
+        filesToProcess.append(fileURL)
+      }
     }
 
     if filesToProcess.isEmpty {
@@ -213,7 +218,7 @@ struct UMAFCLI: AsyncParsableCommand {
               let outputData = try self.processDataToMemory(
                 data: data, sourceURL: fileURL, engine: engine)
 
-              try self.atomicWrite(data: outputData, to: destination)
+              try UMAFFileSystemUtils.atomicWriteStream(data: outputData, to: destination)
 
               await cache?.didProcess(fileURL: fileURL, relativePath: relativePath)
               await state.addSuccess()
@@ -241,41 +246,6 @@ struct UMAFCLI: AsyncParsableCommand {
     if errors > 0 {
       throw ExitCode.failure
     }
-  }
-
-  // Helper to isolate the non-Sendable NSDirectoryEnumerator
-  func scanCandidates(in directory: URL) -> [URL] {
-    let fm = FileManager.default
-    let resourceKeys: [URLResourceKey] = [.isRegularFileKey]
-    guard
-      let enumerator = fm.enumerator(
-        at: directory,
-        includingPropertiesForKeys: resourceKeys,
-        options: [.skipsHiddenFiles]
-      )
-    else {
-      return []
-    }
-
-    var results: [URL] = []
-    for case let fileURL as URL in enumerator {
-      guard let resourceValues = try? fileURL.resourceValues(forKeys: Set(resourceKeys)),
-        resourceValues.isRegularFile == true
-      else { continue }
-
-      let ext = fileURL.pathExtension.lowercased()
-      if ["md", "txt", "json", "html", "pdf", "docx"].contains(ext) {
-        results.append(fileURL)
-      }
-    }
-    return results
-  }
-
-  func atomicWrite(data: Data, to url: URL) throws {
-    let tempURL = url.appendingPathExtension("tmp")
-    try data.write(to: tempURL, options: .atomic)
-    try? FileManager.default.removeItem(at: url)
-    try FileManager.default.moveItem(at: tempURL, to: url)
   }
 
   func processDataToMemory(

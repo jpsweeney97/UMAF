@@ -45,8 +45,8 @@ Live-update output files as you edit source content:
 - **Deterministic**: Stable hashing and normalization.
 - **Fast**: Parallel batch processing (sub-millisecond overhead per file).
 - **Live**: Watch mode for instant feedback loops.
-- **Typed**: JSON Schema validation for all outputs.
-- **Structured**: Spans/blocks are always emitted for richer downstream processing.
+- **Typed**: JSON Schema validation for all outputs (`spec/umaf-envelope-v0.7.0.json`).
+- **Structured**: Spans/blocks are always emitted (provenance + confidence required), and `featureFlags.structure` is always set.
 
 ## Project layout
 
