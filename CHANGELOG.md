@@ -10,3 +10,18 @@
 - Transformer now returns typed results (envelope or markdown), removing JSON round-trips in `Engine.swift` and CLI paths.
 - Updated tests to consume typed transformer output and retained behavior; suite currently passes.
 - Centralized version constants in `UMAFVersion` and wired provenance strings to avoid duplicated prefixes; cleaned redundant PDF normalization and removed legacy MarkdownEngineV2/test scaffolding.
+
+## 0.6.0 — 2025-11-21
+
+### Added
+
+- **HTML Support:** Replaced regex-based parsing with `SwiftSoup` for robust handling of nested tags and malformed HTML.
+- **Concurrency:** Adopted Swift Actors and TaskGroups for thread-safe, high-performance batch processing.
+- **Logging:** Integrated `swift-log` for standardized, cross-platform logging.
+- **Linux Support:** Added CI matrix testing for Ubuntu and guarded macOS-specific adapters (`PDFKit`, `Vision`, `textutil`).
+
+### Changed
+
+- **Architecture:** Replaced bespoke `LineScanner` with `swift-markdown`. The parser now generates normalized text and semantic indices in a single pass ("Unified Truth"), eliminating invariant crashes in `UMAFWalker`.
+- **Caching:** Cache file is now stored in the system's user cache directory instead of polluting the input folder.
+- **Fidelity:** "Inverse Scan" strategy ensures 100% preservation of source formatting (whitespace, indentation) in the normalized output.

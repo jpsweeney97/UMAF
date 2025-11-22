@@ -8,7 +8,6 @@ import Foundation
 
 public enum UMAFCoreEngine {
 
-  /// Helper: Find the first heading title in a markdown string
   static func firstMarkdownHeadingTitle(in text: String) -> String? {
     for raw in text.components(separatedBy: "\n") {
       let trimmed = raw.trimmingCharacters(in: .whitespaces)
@@ -24,7 +23,6 @@ public enum UMAFCoreEngine {
     return nil
   }
 
-  // Expose paragraph maker for SwiftMarkdownAdapter to use
   static func makeParagraphs(from lines: [String]) -> [String] {
     return LegacyAdapter.makeParagraphs(from: lines)
   }
@@ -45,7 +43,6 @@ public enum UMAFCoreEngine {
       let sizeBytes = data.count
       let routed = try InputRouter.load(from: url, data: data)
 
-      // Parsing Strategy
       let semanticResult:
         (
           normalized: String,
@@ -57,7 +54,6 @@ public enum UMAFCoreEngine {
         )
 
       if routed.semanticMediaType == "text/markdown" {
-        // Modern path (SwiftMarkdownAdapter)
         let result = SwiftMarkdownAdapter.parse(text: routed.normalizedText)
         semanticResult = (
           result.normalizedText,
@@ -68,24 +64,20 @@ public enum UMAFCoreEngine {
           result.codeBlocks
         )
       } else {
-        // Legacy path (LegacyAdapter)
-        let (sections, bullets, frontMatter, tables, codeBlocks) =
-          LegacyAdapter.parse(text: routed.normalizedText)
+        // Unified Legacy Path
+        let result = LegacyAdapter.parseAndNormalize(
+          text: routed.normalizedText, mediaType: routed.semanticMediaType)
 
-        let normalized = LegacyAdapter.buildMarkdown(
-          normalizedPayload: routed.normalizedText,
-          mediaType: routed.semanticMediaType,
-          sections: sections,
-          bullets: bullets,
-          frontMatter: frontMatter,
-          tables: tables,
-          codeBlocks: codeBlocks
+        semanticResult = (
+          result.normalizedText,
+          result.sections,
+          result.bullets,
+          result.frontMatter,
+          result.tables,
+          result.codeBlocks
         )
-
-        semanticResult = (normalized, sections, bullets, frontMatter, tables, codeBlocks)
       }
 
-      // Emitting
       switch outputFormat {
       case .jsonEnvelope:
         let envelope = buildEnvelope(
@@ -133,7 +125,6 @@ public enum UMAFCoreEngine {
 
       let hash = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
       let docId = String(hash.prefix(12))
-      // Use a resilient line count from the normalized string
       let lineCount = normalizedPayload.split(separator: "\n", omittingEmptySubsequences: false)
         .count
 

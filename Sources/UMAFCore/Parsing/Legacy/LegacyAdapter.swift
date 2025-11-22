@@ -3,169 +3,91 @@
 //  UMAFCore
 //
 //  Fallback parser and generator for plain text and legacy formats.
-//  Contains logic extracted from UMAFCoreEngine/LineScanner.
+//  Refactored to normalize and analyze structure in a single pass.
 //
 
 import Foundation
 
 struct LegacyAdapter {
 
-  // MARK: - Parser
+  struct ParseResult {
+    let normalizedText: String
+    let sections: [UMAFCoreEngine.Section]
+    let bullets: [UMAFCoreEngine.Bullet]
+    let frontMatter: [UMAFCoreEngine.FrontMatterEntry]
+    let tables: [UMAFCoreEngine.Table]
+    let codeBlocks: [UMAFCoreEngine.CodeBlock]
+  }
 
-  static func parse(text: String) -> (
-    sections: [UMAFCoreEngine.Section],
-    bullets: [UMAFCoreEngine.Bullet],
-    frontMatter: [UMAFCoreEngine.FrontMatterEntry],
-    tables: [UMAFCoreEngine.Table],
-    codeBlocks: [UMAFCoreEngine.CodeBlock]
-  ) {
-    let allLines = text.components(separatedBy: "\n")
+  /// One-shot parse and normalize for legacy content.
+  static func parseAndNormalize(text: String, mediaType: String) -> ParseResult {
+    var normalizedLines: [String] = []
+
+    // 1. Canonicalize lines (trimming, spacing)
+    let rawLines = text.components(separatedBy: "\n")
+    let cleanLines = canonicalizeMarkdownLines(rawLines)
+
+    // 2. Build output (Single "Document" section for legacy types)
+    // Legacy format:
+    // # Document
+    // <blank>
+    // <content>
+
+    normalizedLines.append("# Document")
+    normalizedLines.append("")
+    let bodyStartIndex = 2
+
+    normalizedLines.append(contentsOf: cleanLines)
+
+    let normalizedText = normalizedLines.joined(separator: "\n")
+    let endLineIndex = normalizedLines.count - 1
+
+    // 3. Extract Bullets (mapped to new indices)
+    // Since we just prepended 2 lines, the shift is +2.
     var bullets: [UMAFCoreEngine.Bullet] = []
-
-    for (idx, line) in allLines.enumerated() {
+    for (idx, line) in cleanLines.enumerated() {
       let trimmedLeft = line.drop(while: { $0 == " " || $0 == "\t" })
       guard let first = trimmedLeft.first else { continue }
       if first == "-" || first == "*" || first == "•" {
         var rest = trimmedLeft.dropFirst()
         rest = rest.drop(while: { $0 == " " || $0 == "\t" })
-        let text = String(rest).trimmingCharacters(in: .whitespaces)
-        if !text.isEmpty {
+        let textVal = String(rest).trimmingCharacters(in: .whitespaces)
+        if !textVal.isEmpty {
           bullets.append(
             UMAFCoreEngine.Bullet(
-              text: text, lineIndex: idx, sectionHeading: "Document", sectionLevel: 1))
+              text: textVal,
+              lineIndex: idx + bodyStartIndex,
+              sectionHeading: "Document",
+              sectionLevel: 1
+            )
+          )
         }
       }
     }
 
-    let paragraphs = makeParagraphs(from: allLines)
-    let sections = [
-      UMAFCoreEngine.Section(heading: "Document", level: 1, lines: allLines, paragraphs: paragraphs)
-    ]
+    let paragraphs = makeParagraphs(from: cleanLines)
 
-    return (sections, bullets, [], [], [])
-  }
+    // FIX: Prepend "" to lines to align with SwiftMarkdownAdapter structure
+    // where lines[0] is the blank spacer after the heading.
+    let sectionLines = [""] + cleanLines
 
-  // MARK: - Generator (Markdown Emitter)
+    let section = UMAFCoreEngine.Section(
+      heading: "Document",
+      level: 1,
+      lines: sectionLines,
+      paragraphs: paragraphs,
+      startLineIndex: 0,
+      endLineIndex: endLineIndex
+    )
 
-  static func buildMarkdown(
-    normalizedPayload: String,
-    mediaType: String,
-    sections: [UMAFCoreEngine.Section],
-    bullets: [UMAFCoreEngine.Bullet],
-    frontMatter: [UMAFCoreEngine.FrontMatterEntry],
-    tables: [UMAFCoreEngine.Table],
-    codeBlocks: [UMAFCoreEngine.CodeBlock]
-  ) -> String {
-    var lines: [String] = []
-
-    switch mediaType {
-    case "text/markdown":
-      if frontMatter.isEmpty && sections.isEmpty { return normalizedPayload }
-
-      if !frontMatter.isEmpty {
-        lines.append("---")
-        for e in frontMatter { lines.append("\(e.key): \(e.value)") }
-        lines.append("---")
-        lines.append("")
-      }
-
-      let effectiveSections: [UMAFCoreEngine.Section] =
-        sections.isEmpty
-        ? {
-          let all = normalizedPayload.components(separatedBy: "\n")
-          return [
-            UMAFCoreEngine.Section(
-              heading: "Document", level: 1, lines: all, paragraphs: makeParagraphs(from: all))
-          ]
-        }()
-        : sections
-
-      let hasComplex = !tables.isEmpty || !codeBlocks.isEmpty
-
-      for (idx, s) in effectiveSections.enumerated() {
-        let level = min(max(s.level, 1), 6)
-        let prefix = String(repeating: "#", count: level)
-        let title = s.heading.trimmingCharacters(in: .whitespacesAndNewlines)
-        lines.append("\(prefix) \(title)")
-
-        if !hasComplex, !s.paragraphs.isEmpty {
-          lines.append("")
-          for (pIdx, p) in s.paragraphs.enumerated() {
-            lines.append(p)
-            if pIdx != s.paragraphs.count - 1 { lines.append("") }
-          }
-        } else if !s.lines.isEmpty {
-          lines.append("")
-          lines.append(contentsOf: s.lines)
-        }
-
-        if idx != effectiveSections.count - 1 { lines.append("") }
-      }
-
-      return canonicalizeMarkdownLines(lines).joined(separator: "\n")
-
-    case "application/json":
-      let fence = "```"
-      return [fence + "json", normalizedPayload, fence].joined(separator: "\n")
-
-    default:
-      if let doc = sections.first {
-        let level = min(max(doc.level, 1), 6)
-        let prefix = String(repeating: "#", count: level)
-        let title = doc.heading.trimmingCharacters(in: .whitespacesAndNewlines)
-        lines.append("\(prefix) \(title)")
-        lines.append("")
-
-        let docBullets = bullets.filter {
-          $0.sectionHeading == "Document" || $0.sectionHeading == nil
-        }
-        let bulletLineIdx = Set(docBullets.map { $0.lineIndex })
-        let bulletIndents: [Int] = docBullets.compactMap {
-          guard $0.lineIndex >= 0 && $0.lineIndex < doc.lines.count else { return nil }
-          return leadingIndentWidth(of: doc.lines[$0.lineIndex])
-        }
-        let baseIndent = bulletIndents.min() ?? 0
-
-        var i = 0
-        while i < doc.lines.count {
-          let line = doc.lines[i]
-          let isBlank = line.trimmingCharacters(in: .whitespaces).isEmpty
-
-          if bulletLineIdx.contains(i) {
-            var j = i
-            while j < doc.lines.count, bulletLineIdx.contains(j) {
-              if let b = docBullets.first(where: { $0.lineIndex == j }) {
-                let raw = doc.lines[j]
-                let w = leadingIndentWidth(of: raw)
-                let extra = max(w - baseIndent, 0)
-                let level = extra / 2
-                let indent = String(repeating: "  ", count: level)
-                lines.append("\(indent)- \(b.text)")
-              }
-              j += 1
-            }
-            lines.append("")
-            i = j
-            continue
-          }
-
-          lines.append(line)
-          if isBlank {
-            while i + 1 < doc.lines.count
-              && doc.lines[i + 1].trimmingCharacters(in: .whitespaces).isEmpty
-            {
-              i += 1
-            }
-          }
-          i += 1
-        }
-
-        return canonicalizeMarkdownLines(lines).joined(separator: "\n")
-      } else {
-        let fence = "```"
-        return [fence + "text", normalizedPayload, fence].joined(separator: "\n")
-      }
-    }
+    return ParseResult(
+      normalizedText: normalizedText,
+      sections: [section],
+      bullets: bullets,
+      frontMatter: [],
+      tables: [],
+      codeBlocks: []
+    )
   }
 
   // MARK: - Helpers
@@ -213,12 +135,6 @@ struct LegacyAdapter {
     return paragraphs
   }
 
-  private static func leadingIndentWidth(of line: String) -> Int {
-    var w = 0
-    for ch in line { if ch == " " { w += 1 } else if ch == "\t" { w += 2 } else { break } }
-    return w
-  }
-
   private static func canonicalizeMarkdownLines(_ lines: [String]) -> [String] {
     var out: [String] = []
     out.reserveCapacity(lines.count)
@@ -235,7 +151,6 @@ struct LegacyAdapter {
       return false
     }
 
-    // Manual rightTrim helper
     func rightTrim(_ s: String) -> String {
       var res = s
       while let last = res.last, last == " " || last == "\t" {

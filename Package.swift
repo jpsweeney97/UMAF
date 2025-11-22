@@ -33,10 +33,14 @@ let package = Package(
       url: "https://github.com/swiftlang/swift-markdown.git",
       from: "0.3.0"
     ),
-    // NEW: SwiftSoup for robust HTML parsing
     .package(
       url: "https://github.com/scinfu/SwiftSoup.git",
       from: "2.7.0"
+    ),
+    // NEW: Apple's standard logging
+    .package(
+      url: "https://github.com/apple/swift-log.git",
+      from: "1.5.0"
     ),
   ],
   targets: [
@@ -46,8 +50,9 @@ let package = Package(
         .product(name: "SwiftToolsSupport-auto", package: "swift-tools-support-core"),
         .product(name: "Crypto", package: "swift-crypto"),
         .product(name: "Markdown", package: "swift-markdown"),
-        // NEW: Link SwiftSoup
         .product(name: "SwiftSoup", package: "SwiftSoup"),
+        // NEW: Link Logging
+        .product(name: "Logging", package: "swift-log"),
       ]
     ),
     .executableTarget(

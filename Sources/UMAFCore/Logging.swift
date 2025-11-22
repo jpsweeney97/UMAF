@@ -1,42 +1,30 @@
 //
 //  Logging.swift
-//  UMAF — structured logging wrappers (Linux compatible)
+//  UMAFCore
+//
+//  Centralized logging setup using swift-log.
 //
 
 import Foundation
-
-#if canImport(OSLog)
-import OSLog
-#else
-// Minimal shim for Linux where OSLog is unavailable
-public struct Logger {
-    let label: String
-    public init(subsystem: String, category: String) {
-        self.label = "[\(category)]"
-    }
-    
-    public func debug(_ msg: String) { print("\(label) DEBUG: \(msg)") }
-    public func info(_ msg: String) { print("\(label) INFO: \(msg)") }
-    public func notice(_ msg: String) { print("\(label) NOTICE: \(msg)") }
-    public func error(_ msg: String) { fputs("\(label) ERROR: \(msg)\n", stderr) }
-    public func fault(_ msg: String) { fputs("\(label) FAULT: \(msg)\n", stderr) }
-}
-#endif
+import Logging
 
 public enum UMAFLog {
-    public static let subsystem = "dev.umaf.core"
+  public static let label = "dev.umaf"
 
-    public static let core     = Logger(subsystem: subsystem, category: "core")
-    public static let cli      = Logger(subsystem: subsystem, category: "cli")
-    public static let app      = Logger(subsystem: subsystem, category: "app")
-    public static let parsing  = Logger(subsystem: subsystem, category: "parsing")
-    public static let io       = Logger(subsystem: subsystem, category: "io")
+  // Create a shared logger instance
+  public static var logger: Logger = {
+    var log = Logger(label: label)
+    // Default to info, can be configured via CLI args later
+    log.logLevel = .info
+    return log
+  }()
 }
 
+// Protocol for types to easily access the shared logger
 public protocol UMAFLoggable {
-    var log: Logger { get }
+  var log: Logger { get }
 }
 
-public extension UMAFLoggable {
-    var log: Logger { UMAFLog.core }
+extension UMAFLoggable {
+  public var log: Logger { UMAFLog.logger }
 }

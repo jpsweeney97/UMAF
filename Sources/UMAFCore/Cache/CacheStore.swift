@@ -27,8 +27,25 @@ public actor IncrementalCache {
   private let fileManager = FileManager.default
 
   public init(inputDir: URL) {
-    self.indexURL = inputDir.appendingPathComponent(".umaf-cache.json")
-    // Fix: Call static method to avoid actor isolation violation in init
+    // Hash the input path to create a unique cache file for this specific directory.
+    // This allows caching multiple projects without collision.
+    let inputPathHash =
+      inputDir.path.data(using: .utf8)?.base64EncodedString()
+      ?? inputDir.lastPathComponent
+    let cacheFilename = "umaf-cache-\(inputPathHash).json"
+
+    // Try to use the system user cache directory
+    if let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
+      // Create a subdir for UMAF if it doesn't exist
+      let umafCacheDir = cacheDir.appendingPathComponent("dev.umaf.cli")
+      try? FileManager.default.createDirectory(at: umafCacheDir, withIntermediateDirectories: true)
+      self.indexURL = umafCacheDir.appendingPathComponent(cacheFilename)
+    } else {
+      // Fallback to local if system cache is unavailable (e.g. weird sandboxing)
+      self.indexURL = inputDir.appendingPathComponent(".umaf-cache.json")
+    }
+
+    // Call static method to avoid actor isolation violation in init
     self.cacheIndex = IncrementalCache.loadIndex(from: self.indexURL)
   }
 
@@ -62,7 +79,6 @@ public actor IncrementalCache {
     cacheIndex.entries[relativePath] = entry
   }
 
-  // Fix: Made static to be safely callable from init
   private static func loadIndex(from url: URL) -> CacheIndex {
     guard let data = try? Data(contentsOf: url),
       let decoded = try? JSONDecoder().decode(CacheIndex.self, from: data),

@@ -7,40 +7,60 @@
 
 import Foundation
 
-public extension UMAFCoreEngine {
+extension UMAFCoreEngine {
 
-  struct Section: Codable {
+  public struct Section: Codable {
     public let heading: String
     public let level: Int
     public let lines: [String]
     public let paragraphs: [String]
+
+    // NEW: Explicit location in the normalized document (0-based indices)
+    public let startLineIndex: Int
+    public let endLineIndex: Int
+
+    public init(
+      heading: String,
+      level: Int,
+      lines: [String],
+      paragraphs: [String],
+      startLineIndex: Int = 0,
+      endLineIndex: Int = 0
+    ) {
+      self.heading = heading
+      self.level = level
+      self.lines = lines
+      self.paragraphs = paragraphs
+      self.startLineIndex = startLineIndex
+      self.endLineIndex = endLineIndex
+    }
   }
 
-  struct Table: Codable {
+  public struct Table: Codable {
     public let startLineIndex: Int
     public let header: [String]
     public let rows: [[String]]
   }
 
-  struct CodeBlock: Codable {
+  public struct CodeBlock: Codable {
     public let startLineIndex: Int
     public let language: String?
     public let code: String
   }
 
-  struct Bullet: Codable {
+  public struct Bullet: Codable {
     public let text: String
     public let lineIndex: Int
     public let sectionHeading: String?
     public let sectionLevel: Int?
   }
 
-  struct FrontMatterEntry: Codable {
+  public struct FrontMatterEntry: Codable {
     public let key: String
     public let value: String
   }
 
-  struct Envelope: Codable {
+  public struct Envelope: Codable {
     public let version: String
     public let docTitle: String
     public let docId: String
@@ -59,7 +79,7 @@ public extension UMAFCoreEngine {
     public let codeBlocks: [CodeBlock]
   }
 
-  enum OutputFormat: String, CaseIterable {
+  public enum OutputFormat: String, CaseIterable {
     case jsonEnvelope
     case markdown
   }

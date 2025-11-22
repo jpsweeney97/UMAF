@@ -76,12 +76,12 @@ struct SwiftMarkdownAdapter {
         trimmedBody.removeLast()
       }
 
+      // Capture Start Index (0-based)
+      let sectionStartIndex = currentOutputLine
+
       let headingLine = String(repeating: "#", count: currentLevel) + " " + currentHeading
       normalizedLines.append(headingLine)
 
-      // FIX: Include the spacer blank line in the Section's lines.
-      // This ensures UMAFWalker counts this line as part of the section's extent,
-      // fixing the "Parent < Child" hierarchy invariant failures.
       let sectionLines = [""] + trimmedBody
       normalizedLines.append(contentsOf: sectionLines)
 
@@ -89,12 +89,9 @@ struct SwiftMarkdownAdapter {
         normalizedLines.append("")
       }
 
-      // Determine offset for mapping source indices to output indices.
-      // normalizedLines currently ends at the end of this section.
-      // sectionLines[0] is the blank spacer.
-      // sectionLines[1] is the first line of trimmed content.
-      // currentOutputLine points to the start of the Heading.
-      // So trimmedBody starts at: currentOutputLine + 1 (heading) + 1 (spacer) = +2.
+      // Capture End Index (0-based index of the last line added)
+      let sectionEndIndex = normalizedLines.count - 1
+
       let bodyStartOutputIndex = currentOutputLine + 2
 
       let p = UMAFCoreEngine.makeParagraphs(from: trimmedBody)
@@ -102,8 +99,10 @@ struct SwiftMarkdownAdapter {
         UMAFCoreEngine.Section(
           heading: currentHeading,
           level: currentLevel,
-          lines: sectionLines,  // Includes spacer
-          paragraphs: p
+          lines: sectionLines,
+          paragraphs: p,
+          startLineIndex: sectionStartIndex,  // NEW
+          endLineIndex: sectionEndIndex  // NEW
         ))
 
       let effectiveOffset = bodyStartOutputIndex - (currentBodyStartSourceIndex + trimTopCount)
